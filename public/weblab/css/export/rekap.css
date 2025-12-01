@@ -1,0 +1,102 @@
+/* =============== REKAP LAPORAN STYLE =============== */
+body {
+    font-family: "Poppins", Arial, sans-serif;
+    background-color: #f8fafc;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 90%;
+    margin: 40px auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+}
+
+h2 {
+    text-align: center;
+    color: #2d3748;
+    margin-bottom: 25px;
+}
+
+/* Tombol */
+.btn-container {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.btn {
+    display: inline-block;
+    text-decoration: none;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    margin: 0 5px;
+    font-size: 14px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn.pdf { background-color: #e53e3e; }
+.btn.excel { background-color: #38a169; }
+.btn.back { background-color: #4299e1; }
+
+.btn:hover {
+    opacity: 0.85;
+    transform: scale(1.05);
+}
+
+/* Tabel */
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #e2e8f0;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #edf2f7;
+    color: #2d3748;
+}
+
+tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+tfoot th {
+    background-color: #e2e8f0;
+    font-weight: bold;
+}
+
+/* Chart */
+.chart-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 40px auto 0;
+}
+
+/* Responsif */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 20px;
+    }
+    .btn {
+        display: block;
+        margin: 10px auto;
+    }
+    table, th, td {
+        font-size: 13px;
+    }
+}

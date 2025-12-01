@@ -1,0 +1,240 @@
+/* ========================================
+   GAYA DOKUMEN WORD (A4)
+   ======================================== */
+
+.doc-page {
+    width: 210mm;
+    min-height: 297mm;
+    background: #fff;
+    color: #000;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.45;
+    padding: 25mm 25mm 25mm 30mm; /* margin mirip Word */
+    box-sizing: border-box;
+    margin: 0 auto;
+}
+
+/* ===== HEADER ===== */
+.doc-header {
+    text-align: center;
+    margin-bottom: 15mm;
+}
+
+.doc-header .judul-utama {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 14pt;
+    margin: 2px 0;
+}
+
+/* ===== BODY ===== */
+.doc-body p {
+    margin: 4px 0;
+    text-align: justify;
+}
+
+.doc-body strong {
+    font-weight: bold;
+    font-size: 12pt;
+}
+
+/* ========================================
+   TABEL UTAMA
+   ======================================== */
+.doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 12pt;
+}
+
+.doc-table th,
+.doc-table td {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.doc-table th {
+    font-weight: bold;
+    background: #f9f9f9;
+}
+
+/* Kolom ukuran default */
+.doc-table th:nth-child(1),
+.doc-table td:nth-child(1) { width: 40px; }
+
+.doc-table th:nth-child(2),
+.doc-table td:nth-child(2) {
+    text-align: left;
+    width: 300px;
+}
+
+.doc-table th:nth-child(3),
+.doc-table th:nth-child(4),
+.doc-table th:nth-child(5),
+.doc-table td:nth-child(3),
+.doc-table td:nth-child(4),
+.doc-table td:nth-child(5) {
+    width: 100px;
+    text-align: center;
+}
+
+/* Baris jumlah total */
+.doc-total {
+    background: #f3f3f3;
+    font-weight: bold;
+}
+
+.doc-total td {
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+}
+
+/* Text utilities */
+.text-center { text-align: center; }
+.text-end { text-align: right; }
+.fw-bold { font-weight: bold; }
+
+/* Spasi antar bagian agar natural seperti Word */
+.section-gap { margin-top: 10mm; }
+
+/* ========================================
+   BLOK TANDA TANGAN (1:1 MIRIP WORD)
+   ======================================== */
+
+/* Baris tanggal */
+.doc-date {
+    width: 100%;
+    text-align: right;
+    margin-top: 10mm;
+    padding-right: 10mm; /* dorong sedikit lebih kanan */
+    box-sizing: border-box;
+}
+.doc-date span {
+    display: inline-block;
+    min-width: 50mm; /* pastikan area cukup lebar */
+    transform: translateX(80mm); /* geser lebih natural sesuai margin kanan */
+    text-align: left;
+}
+
+.doc-date p {
+    margin: 0;
+    display: inline-block;
+    transform: translateX(10mm); /* menyesuaikan margin kanan Word */
+}
+
+/* Gunakan tabel invisible agar kiri dan kanan sejajar seperti di Word */
+.doc-signature-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 8mm;
+}
+
+.doc-signature-table {
+    width: 90%; /* proporsional tengah halaman */
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.doc-signature-table td {
+    width: 50%;
+    vertical-align: top;
+    text-align: center;
+    border: none;
+    padding: 0;
+}
+
+.doc-signature-table p {
+    margin: 2px 0;
+}
+
+.doc-signature-space {
+    height: 35px; /* jarak tanda tangan */
+}
+
+.doc-signature-table .doc-name {
+    font-weight: bold;
+    text-decoration: underline;
+    margin-top: 2mm;
+}
+
+/* ========================================
+   POSISI FINAL UNTUK KEPALA DINAS (KANAN)
+   ======================================== */
+.doc-signature-know {
+    position: relative;
+    width: 100%;
+    margin-top: 25mm; /* jarak aman dari tanda tangan atas */
+    text-align: center; /* blok di sisi kanan */
+}
+
+.doc-signature-know-inner {
+    width: 65mm; /* lebar blok tanda tangan Kepala Dinas */
+    text-align: center; /* isi tetap di tengah blok */
+    position: relative;
+    display: inline-block;
+    margin-right: 10mm; /* sejajar margin kanan halaman */
+    vertical-align: top;
+}
+
+.doc-signature-space {
+    height: 35px;
+}
+
+.doc-signature-know p {
+    margin: 2px 0;
+}
+
+.doc-signature-know .doc-name {
+    font-weight: bold;
+    text-decoration: underline;
+    margin-top: 3mm;
+}
+
+/* ========================================
+   DISPOSISI BOX
+   ======================================== */
+.disposisi-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20mm;
+    font-size: 12pt;
+}
+
+.disposisi-table td {
+    border: 1px solid #000;
+    padding: 10mm;
+    vertical-align: top;
+    height: 60mm;
+}
+
+/* ========================================
+   CETAK (PRINT)
+   ======================================== */
+@media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    body, html {
+        background: #fff;
+        margin: 0;
+    }
+
+    .doc-page {
+        padding: 25mm 25mm 25mm 30mm;
+        box-shadow: none;
+        width: auto;
+        min-height: auto;
+    }
+
+    .doc-date {
+        padding-right: 5mm !important;
+        transform: translateX(10mm) !important;
+    }
+}

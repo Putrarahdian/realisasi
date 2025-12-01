@@ -1,0 +1,86 @@
+/* ========== LAPORAN TRIWULAN STYLE ========== */
+
+.laporan-container {
+    width: 80%;
+    margin: 0 auto;
+    font-family: "Times New Roman", Times, serif;
+    line-height: 1.6;
+    color: #000;
+    background: #fff;
+    padding: 40px;
+}
+
+.laporan-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.judul {
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 0;
+    text-transform: uppercase;
+}
+
+.subjudul {
+    font-size: 14pt;
+    margin: 3px 0;
+}
+
+.judul-besar {
+    font-size: 14pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 10px;
+}
+
+.laporan-section {
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+.laporan-section p {
+    font-size: 12pt;
+    margin: 4px 0;
+}
+
+/* ====== TABEL ====== */
+.laporan-tabel {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 12pt;
+}
+
+.laporan-tabel th,
+.laporan-tabel td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+}
+
+.laporan-tabel th {
+    text-align: center;
+    font-weight: bold;
+    background-color: #f8f8f8;
+}
+
+/* ====== TANDA TANGAN ====== */
+.laporan-ttd {
+    margin-top: 60px;
+    text-align: right;
+    font-size: 12pt;
+}
+
+.laporan-ttd .spacer {
+    height: 60px;
+}
+
+.laporan-ttd .nama {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.laporan-ttd .nip {
+    margin-top: -5px;
+}

@@ -1,0 +1,37 @@
+/* ==========================================================
+   RESET & FONT
+   ========================================================== */
+body, html {
+    line-height: 1.8;
+    font-family: 'Poppins', sans-serif;
+    color: #555e58;
+    margin: 0;
+    padding: 0;
+    font-weight: 400;
+    background-color: #f9fafc;
+}
+
+/* ==========================================================
+   WRAPPER & OVERLAY
+   ========================================================== */
+.wrapper {
+    position: relative;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.body-overlay {
+    position: fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background: rgba(0,0,0,0.25);
+    z-index: 1020;
+    display: none;
+    transition: all 0.3s ease;
+}
+
+.body-overlay.show-nav {
+    display: block;
+}

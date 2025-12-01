@@ -1,0 +1,169 @@
+/* ===== Halaman Edit Realisasi Kegiatan ===== */
+
+.edit-realisasi-wrapper {
+    margin-bottom: 2.5rem;
+}
+
+.form-title {
+    font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-weight: 600;
+    font-size: 1.35rem;
+}
+
+.form-subtitle {
+    font-size: 0.9rem;
+}
+
+/* Badge tahun di sudut kanan */
+.bg-primary-subtle {
+    background-color: rgba(37, 99, 235, 0.08) !important;
+    border-radius: 999px;
+}
+
+/* Section heading */
+.form-section {
+    padding: 1.25rem 1.1rem 1.3rem;
+    border-radius: 14px;
+    background: #f9fafb;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    margin-bottom: 1.5rem;
+}
+
+.form-section-header h5 {
+    font-size: 1rem;
+}
+
+.section-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2563eb, #06b6d4);
+    color: #f9fafb;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
+}
+
+/* Input style halus */
+.form-control-soft {
+    background-color: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.92rem;
+}
+
+.form-control-soft:focus {
+    background-color: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.18);
+}
+
+/* Tabel */
+.table-section {
+    margin-top: 0.5rem;
+}
+
+.table-laporan {
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #ffffff;
+}
+
+.table-laporan thead th {
+    background: linear-gradient(135deg, #eff6ff, #e0f2fe) !important;
+    color: #0f172a;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.table-laporan tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.table-laporan tbody tr:hover {
+    background-color: #eef2ff;
+}
+
+.table-laporan td,
+.table-laporan th {
+    vertical-align: middle;
+    padding: 0.55rem 0.75rem;
+    border-color: #e5e7eb;
+}
+
+/* Textarea */
+.form-section textarea.form-control-soft {
+    resize: vertical;
+}
+
+/* Tombol aksi */
+.form-actions {
+    border-top: 1px solid rgba(148, 163, 184, 0.35);
+    padding-top: 1rem;
+}
+
+.form-actions .btn {
+    border-radius: 999px;
+}
+
+.form-actions .btn-light {
+    border-color: #e5e7eb;
+}
+
+/* Responsif */
+@media (max-width: 768px) {
+    .form-card {
+        padding: 1.5rem !important;
+    }
+
+    .form-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+
+    .form-actions .btn-group-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .table {
+        font-size: 0.86rem;
+    }
+    
+}
+/* ==== OVERRIDE GLOBAL (BERLAKU DI SEMUA UKURAN) ==== */
+
+/* Override setting global .table di halaman edit realisasi */
+.edit-realisasi-wrapper .table {
+    min-width: 100%;     /* ikut lebar card saja */
+}
+
+/* Biar scroll horizontal nggak muncul */
+.edit-realisasi-wrapper .table-responsive {
+    overflow-x: visible;
+}
+
+/* Supaya tabel benar-benar selebar card */
+.edit-realisasi-wrapper .table-laporan {
+    width: 100%;
+    min-width: 0;
+}
+
+/* supaya form-card keliatan seperti kertas besar, bukan kartu sempit */
+.edit-realisasi-wrapper .form-card {
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}

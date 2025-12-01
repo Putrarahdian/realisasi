@@ -1,0 +1,231 @@
+/* ==========================================================
+   LOGIN PAGE (scoped) — hanya aktif jika <body>.has-login-layout
+   ========================================================== */
+
+/* ----- Struktur Utama saat login saja ----- */
+.has-login-layout,
+.has-login-layout html,
+.has-login-layout body {
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.has-login-layout .wrapper,
+.has-login-layout #content,
+.has-login-layout .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 100vh !important;
+}
+
+/* Pastikan section login full tinggi layar */
+.has-login-layout .login-page {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+    background-image:
+        linear-gradient(135deg, rgba(25, 118, 210, 0.75), rgba(0, 191, 165, 0.75)),
+        url('../../img/lb.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+/* Overlay gelap + blur di atas background */
+.has-login-layout .login-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.25), transparent 55%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1;
+    transition: background-color 0.3s ease;
+}
+
+/* ----- Kartu Login (glassmorphism) ----- */
+.has-login-layout .login-card {
+    position: relative;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111827;
+    border-radius: 18px;
+    padding: 2.25rem 2.25rem 2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.has-login-layout {
+    transform: translateY(-4px);
+    box-shadow:
+        0 24px 55px rgba(15, 23, 42, 0.55),
+        0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+/* ----- Header & Logo ----- */
+.has-login-layout .login-header h3 {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.has-login-layout .login-subtitle {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+/* Lingkaran (container) */
+.has-login-layout .login-logo-circle {
+    width: 85px;
+    height: 85px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2563eb, #06b6d4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.55);
+    margin: 0 auto 1rem;
+}
+
+/* Gambar di dalam lingkaran */
+.has-login-layout .login-logo-circle .login-logo-img {
+    width: 100%;       
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.has-login-layout .login-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(37, 99, 235, 0.08);
+    color: #2563eb;
+}
+
+/* ----- Alert ----- */
+.has-login-layout .login-card .alert {
+    font-size: 0.85rem;
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+}
+
+/* ----- Field & Input ----- */
+.has-login-layout .login-card .form-label {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+.has-login-layout .login-card .form-control {
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    background-color: #f9fafb;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.has-login-layout .login-card .form-control:focus {
+    background-color: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+    outline: none;
+}
+
+.has-login-layout .login-card .form-control.is-invalid {
+    border-color: #dc2626;
+}
+
+/* Input dengan icon di kiri */
+.has-login-layout .input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.has-login-layout .input-with-icon .input-icon {
+    position: absolute;
+    left: 0.75rem;
+    font-size: 0.78rem;
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.has-login-layout .input-with-icon .form-control {
+    padding-left: 2.1rem;
+}
+
+/* ----- Tombol Login ----- */
+.has-login-layout .btn-login {
+    border-radius: 999px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.7rem 1rem;
+    background-image: linear-gradient(135deg, #2563eb, #06b6d4);
+    color: #f9fafb;
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.55);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.has-login-layout .btn-login:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 40px rgba(37, 99, 235, 0.65);
+    opacity: 0.96;
+}
+
+.has-login-layout .btn-login:active {
+    transform: translateY(0);
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.55);
+}
+
+/* ----- Footer ----- */
+.has-login-layout .login-footer {
+    margin-top: 0.75rem;
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+/* ----- Sembunyikan elemen layout lain (navbar/sidebar) saat login ----- */
+.has-login-layout .top-navbar,
+.has-login-layout .body-overlay,
+.has-login-layout .sidebar,
+.has-login-layout .xp-menubar {
+    display: none !important;
+}
+
+/* Hilangkan padding atas jika layout fixed */
+.has-login-layout .main-content {
+    margin-top: 0 !important;
+}
+
+/* Responsif dikit untuk layar kecil */
+@media (max-width: 576px) {
+    .has-login-layout .login-card {
+        padding: 1.75rem 1.5rem 1.5rem;
+    }
+
+    .has-login-layout .login-page {
+        padding: 1rem;
+    }
+}

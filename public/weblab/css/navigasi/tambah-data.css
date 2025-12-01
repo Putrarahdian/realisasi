@@ -1,0 +1,95 @@
+/* ==============================
+   TAMBAH DATA PAGE STYLING
+   ============================== */
+body {
+    background-image: url('../../img/bah.jpeg'); /* pastikan path benar */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+   .form-card {
+    background: #fdfdfd; 
+    border-radius: 14px;
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,123,255,0.1);
+}
+
+.form-title {
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.realisasi-form .form-group {
+    margin-bottom: 1.2rem;
+}
+
+.realisasi-form label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    color: #444;
+}
+
+.realisasi-form input,
+.realisasi-form textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.realisasi-form input:focus,
+.realisasi-form textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.15);
+}
+
+/* Tombol aksi */
+.form-actions .btn-submit,
+.form-actions .btn-back {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-submit {
+    background: #007bff;
+    color: #fff;
+    border: none;
+}
+
+.btn-submit:hover {
+    background: #0069d9;
+    box-shadow: 0 4px 10px rgba(0,123,255,0.2); /* ⬅️ Tambahan efek hover lembut */
+}
+
+.btn-back {
+    background: #f8f9fa;
+    color: #333;
+    border: 1px solid #ccc;
+    margin-left: 10px;
+}
+
+.btn-back:hover {
+    background: #e2e6ea;
+}
+
+/* Responsif */
+@media (max-width: 576px) {
+    .form-card {
+        padding: 1.5rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1); /* ⬅️ Sedikit ubah shadow di mobile */
+    }
+}

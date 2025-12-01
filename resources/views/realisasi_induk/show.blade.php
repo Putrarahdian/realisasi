@@ -1,0 +1,1 @@
+Nothing to see, datanya di index.blade.php

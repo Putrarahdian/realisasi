@@ -1,0 +1,156 @@
+/* ==========================================================
+   🌟 SIDEBAR (MODERN LOOK — Gelap, tanpa dark mode)
+   ========================================================== */
+:root {
+  --sb-bg: #1c222d;          /* Warna utama sidebar */
+  --sb-border: rgba(255, 255, 255, 0.08);
+  --sb-hover: rgba(41, 93, 251, 0.15);
+  --sb-active-bg: rgba(41, 93, 251, 0.25);
+  --sb-text: #e4e6ec;        /* Warna teks menu */
+  --sb-accent: #295dfb;      /* Warna biru utama */
+}
+
+/* ==========================================================
+   STRUKTUR DASAR SIDEBAR
+   ========================================================== */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: -260px;
+  height: 100%;
+  width: 260px;
+  background: var(--sb-bg);
+  border-right: 1px solid var(--sb-border);
+  box-shadow: 4px 0 25px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  transition: all 0.4s ease;
+  z-index: 1500;
+  font-family: 'Poppins', sans-serif;
+}
+
+#sidebar.active {
+  left: 0;
+}
+
+/* ==========================================================
+   LOGO HEADER
+   ========================================================== */
+#sidebar .sidebar-header {
+  padding: 22px 20px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#sidebar .sidebar-header img {
+  max-width: 140px;
+  display: block;
+  margin: 0 auto;
+  transition: transform 0.3s ease;
+}
+
+#sidebar .sidebar-header img:hover {
+  transform: scale(1.05);
+}
+
+/* ==========================================================
+   NAVIGATION ITEMS
+   ========================================================== */
+#sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#sidebar ul li {
+  position: relative;
+}
+
+#sidebar ul li a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: var(--sb-text);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin: 3px 10px;
+}
+
+#sidebar ul li a:hover {
+  background: var(--sb-hover);
+  color: var(--sb-accent);
+  border-left-color: var(--sb-accent);
+  transform: translateX(3px);
+}
+
+#sidebar ul li.active > a {
+  background: var(--sb-active-bg);
+  color: var(--sb-accent);
+  border-left-color: var(--sb-accent);
+  font-weight: 600;
+  box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+#sidebar ul li a i.material-icons {
+  font-size: 20px;
+  line-height: 1;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+
+#sidebar ul li a:hover i.material-icons {
+  opacity: 1;
+}
+
+/* ==========================================================
+   SUBMENU (COLLAPSE)
+   ========================================================== */
+#sidebar ul ul {
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--sb-accent);
+  border-radius: 6px;
+  margin: 3px 15px;
+}
+
+#sidebar ul ul li a {
+  padding-left: 45px;
+  font-size: 14px;
+  color: #d6d7db;
+  border-left: none;
+}
+
+#sidebar ul ul li a:hover {
+  background: var(--sb-active-bg);
+  color: var(--sb-accent);
+}
+
+/* ==========================================================
+   SCROLLBAR
+   ========================================================== */
+#sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+#sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+#sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+@media (max-width: 991px) {
+  #sidebar {
+    left: -260px;
+  }
+  #sidebar.active {
+    left: 0;
+  }
+}

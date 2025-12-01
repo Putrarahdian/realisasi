@@ -1,0 +1,81 @@
+/* ==========================================================
+   CONTENT AREA
+   ========================================================== */
+#content {
+    margin-top: 70px;
+    transition: margin-left 0.3s ease;
+}
+
+#content.active {
+    margin-left: 260px;
+}
+
+.main-content {
+    padding: 30px;
+}
+
+/* ==========================================================
+   DROPDOWN & MODAL
+   ========================================================== */
+.dropdown-menu {
+    border: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.26);
+    transition: all 0.2s ease;
+}
+
+.dropdown-menu li > a {
+    font-size: 13px;
+    padding: 10px 20px;
+    color: #333;
+}
+
+.modal-content {
+    border-radius: 12px;
+}
+.modal.fade .modal-dialog {
+  transform: scale(0.95);
+  transition: all 0.2s ease-out;
+}
+.modal.show .modal-dialog {
+  transform: scale(1);
+}
+/* ==========================================================
+   TOAST NOTIFICATION (GLOBAL)
+   ========================================================== */
+.toast-container {
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  border-radius: 10px;
+  animation: fadeSlide 0.5s ease;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+@media (max-width: 991px) {
+    #sidebar {
+        left: -260px;
+        transition: all 0.3s ease;
+    }
+    #sidebar.active {
+        left: 0;
+    }
+    #content.active {
+        margin-left: 0;
+    }
+}

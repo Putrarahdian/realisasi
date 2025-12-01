@@ -1,0 +1,147 @@
+.card {
+  border-radius: 0.6rem;
+}
+
+.card-header {
+  border-bottom: none;
+}
+
+.form-control, .form-select {
+  border-radius: 0.4rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+  box-shadow: 0 0 0 0.15rem rgba(13,110,253,0.25);
+}
+.btn-outline-light {
+  border-width: 2px;
+  transition: all 0.25s ease-in-out;
+}
+.btn-outline-light:hover {
+  background-color: white;
+  color: #0d6efd !important;
+  transform: translateY(-1px);
+}
+/* ====== STYLE: MENU (Daftar Users) ====== */
+
+/* Responsif scroll tabel */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Lebar minimum agar kolom tidak saling numpuk */
+.table {
+  min-width: 950px;
+}
+
+/* Header tabel */
+.table th {
+  background-color: #e8f0fe !important;
+  font-weight: 600;
+  vertical-align: middle !important;
+}
+
+/* Isi tabel */
+.table td,
+.table th {
+  white-space: nowrap;
+}
+
+/* Tombol kecil */
+.btn-sm {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+/* Badge Role */
+.badge {
+  font-size: 0.8rem;
+  border-radius: 0.4rem;
+}
+
+/* Header judul halaman */
+h3.fw-bold.text-primary {
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Card style */
+.card {
+  border-radius: 12px;
+}
+
+/* Table border halus */
+.table-bordered {
+  border-color: #dee2e6;
+}
+
+/* Efek hover baris */
+.table-hover tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Tombol aksi */
+.btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+/* ====== Search Bar dan Pagination ====== */
+.input-group input {
+  border-radius: 8px 0 0 8px;
+}
+
+.input-group .btn {
+  border-radius: 0 8px 8px 0;
+  font-weight: 500;
+}
+
+.pagination {
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.page-link {
+  border-radius: 8px;
+  color: #0d6efd;
+}
+
+.page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+/* ====== Pagination & Result Info Spacing ====== */
+.pagination-wrapper {
+  gap: 1.2rem !important; /* jarak antara tulisan dan pagination */
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.pagination {
+  margin-bottom: 0;
+}
+
+.text-muted.small {
+  font-size: 0.9rem;
+  margin-right: 8px; /* tambahan jarak kecil opsional */
+}
+
+@media (max-width: 768px) {
+  .pagination-wrapper {
+    justify-content: center !important;
+    text-align: center;
+  }
+}
+
+/* ====== Spasi antara tulisan result dan pagination ====== */
+.pagination-wrapper .text-muted.small {
+  margin-right: 20px !important; /* tambahkan jarak kanan */
+}
+
+.pagination-wrapper .pagination {
+  margin-left: 10px !important; /* jarak kiri kecil untuk keseimbangan */
+}

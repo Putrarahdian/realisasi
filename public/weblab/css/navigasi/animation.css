@@ -1,0 +1,13 @@
+/* ==========================================================
+   ANIMASI HALUS
+   ========================================================== */
+#sidebar,
+#content,
+.top-navbar {
+    transition: all 0.3s ease;
+}
+
+button,
+a {
+    transition: all 0.2s ease-in-out;
+}
