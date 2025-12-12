@@ -8,6 +8,17 @@ use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\AdminController;
 
 // ===========================
+// 🌐 LANDING (publik)
+// ===========================
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('home'); // /home
+    }
+    return view('home'); // resources/views/home.blade.php (landing)
+})->name('landing');
+
+
+// ===========================
 // 🔒 GUEST (belum login)
 // ===========================
 Route::middleware('guest')->group(function () {
@@ -24,7 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // 🏠 Halaman utama
-    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     // ============================================================
     // 📊 REKAP & EXPORT (dapat diakses semua role)

@@ -65,7 +65,7 @@ class HomeController extends Controller
             $belumDiisi[$tw] = $qBelum->get();
         }
 
-        return view('home',[
+        return view('dashboard.home',[
             'user'           => $user,
             'tahunDashboard' => $tahunDashboard,
             'triwulans'      => $triwulans,
