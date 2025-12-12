@@ -37,7 +37,7 @@
   <div class="container py-2">
     <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{{ route('landing') }}">
       <span class="brand"></span>
-      <span>Diskominfo</span>
+      <span>DISKOMINFO</span>
     </a>
 
     <div class="ms-auto d-flex align-items-center gap-2">
