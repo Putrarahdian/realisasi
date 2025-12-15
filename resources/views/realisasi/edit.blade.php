@@ -1,6 +1,10 @@
 @extends('layout.weblab')
 
 @section('content')
+@php
+  $isKasubagKeu = auth()->user()?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
+@endphp
+
 <div class="edit-realisasi-wrapper mt-4 px-3">
   <div class="row">
     <div class="col-12">
@@ -28,7 +32,6 @@
             </div>
 
             @php
-              // Target acuan dari Triwulan I
               $targetOutputTw1 = isset($outputs['I'])
                   ? optional($outputs['I']->first())->target
                   : null;
@@ -54,28 +57,27 @@
                       <td class="text-center fw-semibold">{{ $i+1 }}</td>
                       <td class="text-center">Triwulan {{ $tw }}</td>
 
-                      {{-- Uraian tetap bisa di-edit --}}
                       <td>
                         <input type="text"
                                name="output[{{ $tw }}][uraian]"
                                value="{{ $o->uraian ?? '' }}"
-                               class="form-control form-control-soft">
+                               class="form-control form-control-soft"
+                               @if($isKasubagKeu) readonly @endif>
                       </td>
 
-                      {{-- Target: hanya TW I yang bisa di-edit, TW II–IV ikut TW I --}}
                       <td>
                         @if($tw === 'I')
                           <input type="number"
                                  id="target-output-tw1"
                                  name="output[{{ $tw }}][target]"
                                  value="{{ $o->target ?? '' }}"
-                                 class="form-control text-end form-control-soft">
+                                 class="form-control text-end form-control-soft"
+                                 @if($isKasubagKeu) readonly @endif>
                         @else
                           <input type="number"
                                  class="form-control text-end form-control-soft js-output-target-display"
                                  value="{{ $targetOutputTw1 }}"
                                  readonly>
-                          {{-- hidden agar tetap terkirim ke controller --}}
                           <input type="hidden"
                                  class="js-output-target-hidden"
                                  name="output[{{ $tw }}][target]"
@@ -83,12 +85,12 @@
                         @endif
                       </td>
 
-                      {{-- Realisasi tetap bisa di-edit per triwulan --}}
                       <td>
                         <input type="number"
                                name="output[{{ $tw }}][realisasi]"
                                value="{{ $o->realisasi ?? '' }}"
-                               class="form-control text-end form-control-soft">
+                               class="form-control text-end form-control-soft"
+                               @if($isKasubagKeu) readonly @endif>
                       </td>
                     </tr>
                   @endforeach
@@ -106,7 +108,6 @@
             </div>
 
             @php
-              // Target acuan dari Triwulan I
               $targetOutcomeTw1 = isset($outcomes['I'])
                   ? optional($outcomes['I']->first())->target
                   : null;
@@ -132,32 +133,31 @@
                       <td class="text-center fw-semibold">{{ $i+1 }}</td>
                       <td class="text-center">Triwulan {{ $tw }}</td>
 
-                      {{-- Uraian --}}
                       <td>
                         <input type="text"
                                name="outcome[{{ $tw }}][uraian]"
                                value="{{ $oc->uraian ?? '' }}"
-                               class="form-control form-control-soft">
+                               class="form-control form-control-soft"
+                               @if($isKasubagKeu) readonly @endif>
                       </td>
 
-                      {{-- Target: hanya TW I bisa di-edit --}}
                       <td>
-                          <input type="number"
-                                 class="form-control text-end form-control-soft  js-outcome-target-display"
-                                 value="{{ $targetOutcomeTw1 }}"
-                                 readonly>
-                          <input type="hidden"
-                                 class="js-outcome-target-hidden"
-                                 name="outcome[{{ $tw }}][target]"
-                                 value="{{ $targetOutcomeTw1 }}">
+                        <input type="number"
+                               class="form-control text-end form-control-soft js-outcome-target-display"
+                               value="{{ $targetOutcomeTw1 }}"
+                               readonly>
+                        <input type="hidden"
+                               class="js-outcome-target-hidden"
+                               name="outcome[{{ $tw }}][target]"
+                               value="{{ $targetOutcomeTw1 }}">
                       </td>
 
-                      {{-- Realisasi --}}
                       <td>
                         <input type="number"
                                name="outcome[{{ $tw }}][realisasi]"
                                value="{{ $oc->realisasi ?? '' }}"
-                               class="form-control text-end form-control-soft">
+                               class="form-control text-end form-control-soft"
+                               @if($isKasubagKeu) readonly @endif>
                       </td>
                     </tr>
                   @endforeach
@@ -175,7 +175,7 @@
             </div>
 
             @php
-              $sasaran = $induk->sasaran; // relasi hasOne
+              $sasaran = $induk->sasaran;
             @endphp
 
             <div class="table-responsive table-section">
@@ -193,36 +193,34 @@
                   <tr>
                     <td class="text-center fw-semibold">1</td>
 
-                    {{-- Uraian --}}
                     <td>
                       <input type="text"
                              name="sasaran[uraian]"
                              value="{{ old('sasaran.uraian', optional($sasaran)->uraian) }}"
-                             class="form-control form-control-soft">
+                             class="form-control form-control-soft"
+                             @if($isKasubagKeu) readonly @endif>
                     </td>
 
-                    {{-- Target --}}
                     <td>
                       <input type="number"
                              id="sasaran-target-display"
                              value="{{ old('sasaran.target', optional($sasaran)->target) }}"
-                             class="form-control text-end form-control-soft" readonly>
-                             {{-- Hidden --}}
+                             class="form-control text-end form-control-soft"
+                             readonly>
                       <input type="hidden"
                              id="sasaran-target-hidden"
                              name="sasaran[target]"
                              value="{{ old('sasaran.target', optional($sasaran)->target) }}">
                     </td>
 
-                    {{-- Realisasi --}}
                     <td>
                       <input type="number"
                              name="sasaran[realisasi]"
                              value="{{ old('sasaran.realisasi', optional($sasaran)->realisasi) }}"
-                             class="form-control text-end form-control-soft">
+                             class="form-control text-end form-control-soft"
+                             @if($isKasubagKeu) readonly @endif>
                     </td>
 
-                    {{-- Capaian (hanya tampil, dihitung di controller) --}}
                     <td class="text-center">
                       @if($sasaran && $sasaran->target > 0)
                         {{ number_format($sasaran->realisasi / $sasaran->target * 100, 2) }}%
@@ -236,11 +234,13 @@
             </div>
           </div>
 
-
           {{-- 🔹 Keuangan --}}
           <div class="form-section mb-4">
             <div class="form-section-header d-flex align-items-center mb-3">
               <h5 class="mb-0">5. Pelaksanaan Keuangan</h5>
+              @if($isKasubagKeu)
+                <span class="ms-2 badge bg-warning-subtle text-warning fw-semibold">Kasubag Keuangan: bisa edit</span>
+              @endif
             </div>
 
             <div class="table-responsive table-section">
@@ -288,33 +288,31 @@
               <div class="col-md-6">
                 <label class="form-label small fw-semibold text-muted">a. Keberhasilan</label>
                 @for($i = 1; $i <= 4; $i++)
-                  @php
-                    $field = "keberhasilan_tw{$i}";
-                  @endphp
+                  @php $field = "keberhasilan_tw{$i}"; @endphp
                   <div class="mb-2">
                     <small class="text-muted d-block mb-1">TW {{ $i }}</small>
                     <textarea
                       name="keberhasilan[{{ $field }}]"
                       class="form-control form-control-soft"
-                      rows="2">{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
+                      rows="2"
+                      @if($isKasubagKeu) readonly @endif>{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
                   </div>
-                @endfor  
+                @endfor
               </div>
 
               <div class="col-md-6">
                 <label class="form-label small fw-semibold text-muted">b. Hambatan</label>
                 @for($i = 1; $i <= 4; $i++)
-                  @php
-                    $field = "hambatan_tw{$i}";
-                  @endphp
+                  @php $field = "hambatan_tw{$i}"; @endphp
                   <div class="mb-2">
                     <small class="text-muted d-block mb-1">TW {{ $i }}</small>
                     <textarea
                       name="keberhasilan[{{ $field }}]"
                       class="form-control form-control-soft"
-                      rows="2">{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
+                      rows="2"
+                      @if($isKasubagKeu) readonly @endif>{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
                   </div>
-                @endfor  
+                @endfor
               </div>
             </div>
           </div>
@@ -323,6 +321,9 @@
           <div class="form-actions mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="text-muted small">
               Pastikan data sudah benar sebelum menyimpan perubahan.
+              @if($isKasubagKeu)
+                <span class="d-block">Catatan: Kasubag Keuangan hanya menyimpan perubahan pada bagian Keuangan.</span>
+              @endif
             </div>
             <div class="btn-group-actions">
               <a href="{{ route('realisasi.show', $induk->id) }}" class="btn btn-secondary px-4">
@@ -342,43 +343,43 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
+  const inputTw1 = document.getElementById('target-output-tw1');
+  if (!inputTw1) return;
 
-    const inputTw1 = document.querySelector('#target-output-tw1');
-    if (!inputTw1) return;
+  const syncTargets = () => {
+    const val = inputTw1.value ?? '';
 
-    function syncTargets() {
-        const val = inputTw1.value || '';
+    // Output TW II–IV (display & hidden)
+    document.querySelectorAll('.js-output-target-display').forEach((el) => {
+      el.value = val;
+    });
+    document.querySelectorAll('.js-output-target-hidden').forEach((el) => {
+      el.value = val;
+    });
 
-        // Output TW II–IV (display & hidden)
-        document.querySelectorAll('.js-output-target-display').forEach(el => {
-            el.value = val;
-        });
-        document.querySelectorAll('.js-output-target-hidden').forEach(el => {
-            el.value = val;
-        });
+    // Outcome semua TW (display & hidden)
+    document.querySelectorAll('.js-outcome-target-display').forEach((el) => {
+      el.value = val;
+    });
+    document.querySelectorAll('.js-outcome-target-hidden').forEach((el) => {
+      el.value = val;
+    });
 
-        // Outcome semua TW (display & hidden)
-        document.querySelectorAll('.js-outcome-target-display').forEach(el => {
-            el.value = val;
-        });
-        document.querySelectorAll('.js-outcome-target-hidden').forEach(el => {
-            el.value = val;
-        });
-
-    const sasaranDisplay = document.querySelector('#sasaran-target-display');
-    const sasaranHidden  = document.querySelector('#sasaran-target-hidden');
+    // Sasaran target (display & hidden)
+    const sasaranDisplay = document.getElementById('sasaran-target-display');
+    const sasaranHidden  = document.getElementById('sasaran-target-hidden');
     if (sasaranDisplay) sasaranDisplay.value = val;
     if (sasaranHidden)  sasaranHidden.value  = val;
-    }
+  };
 
-    // jalanin ketika user mengetik / mengganti nilai
-    inputTw1.addEventListener('input', syncTargets);
-    inputTw1.addEventListener('change', syncTargets);
-    
-    // sync awal saat halaman pertama kali dibuka
-    syncTargets();
+  inputTw1.addEventListener('input', syncTargets);
+  inputTw1.addEventListener('change', syncTargets);
+
+  // sync awal saat halaman pertama kali dibuka
+  syncTargets();
 });
 </script>
+
 
 @endsection

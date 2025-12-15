@@ -1,6 +1,10 @@
 @extends('layout.weblab')
 
 @section('content')
+@php
+  $isKasubagKeuangan = auth()->user()?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
+@endphp
+
 <div class="container py-4">
   <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body">
@@ -13,6 +17,7 @@
         Program/Kegiatan: <strong>{{ $induk->program }}</strong><br>
         Indikator: <strong>{{ $induk->indikator }}</strong>
       </p>
+
       <p class="text-danger small mb-4">
         <span class="fw-bold">*</span> Wajib diisi
       </p>
@@ -20,6 +25,8 @@
       <form action="{{ route('realisasi.triwulan.store', [$no, $induk->id]) }}" method="POST">
         @csrf
         <input type="hidden" name="induk_id" value="{{ $induk->id }}">
+        
+        @if(!$isKasubagKeuangan)
 
         {{-- ================= OUTPUT ================= --}}
         <h5 class="fw-bold mt-3">a. Output (Sub Koordinator / Ess IV)</h5>
@@ -35,6 +42,7 @@
                    required>
             @error('output.uraian') <div class="invalid-feedback">{{ $message }}</div> @enderror
           </div>
+
           <div class="col-md-3">
             <label class="form-label">
               Target
@@ -58,6 +66,7 @@
 
             @error('output.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
           </div>
+
           <div class="col-md-3">
             <label class="form-label">
               Realisasi <span class="text-danger">*</span>
@@ -87,6 +96,7 @@
                    required>
             @error('outcome.uraian') <div class="invalid-feedback">{{ $message }}</div> @enderror
           </div>
+
           <div class="col-md-3">
             <label class="form-label">
               Target
@@ -94,6 +104,7 @@
                 <span class="text-danger">*</span>
               @endif
             </label>
+
             @if($no == 1)
               <input type="number"
                      name="outcome[target]"
@@ -109,6 +120,7 @@
 
             @error('outcome.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
           </div>
+
           <div class="col-md-3">
             <label class="form-label">
               Realisasi <span class="text-danger">*</span>
@@ -124,11 +136,12 @@
 
         <hr>
 
-        {{-- SASARAN (TW I: isi uraian + target, TW lain hanya tampil) --}}
+        {{-- ================= SASARAN ================= --}}
         <div class="card mb-3">
           <div class="card-header bg-light">
             <strong>c. Sasaran</strong>
           </div>
+
           <div class="card-body">
             <div class="mb-3">
               <label class="form-label">
@@ -137,10 +150,12 @@
                   <span class="text-danger">*</span>
                 @endif
               </label>
+
               <textarea name="sasaran[uraian]"
-                        class="form-control"
+                        class="form-control @error('sasaran.uraian') is-invalid @enderror"
                         rows="2"
                         @if($no != 1) readonly @else required @endif>{{ old('sasaran.uraian', $sasaran->uraian ?? '') }}</textarea>
+              @error('sasaran.uraian') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="row">
@@ -153,9 +168,10 @@
                 </label>
                 <input type="number" step="0.01"
                        name="sasaran[target]"
-                       class="form-control"
+                       class="form-control @error('sasaran.target') is-invalid @enderror"
                        value="{{ old('sasaran.target', $sasaran->target ?? '') }}"
                        @if($no != 1) readonly @else required @endif>
+                @error('sasaran.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
               </div>
 
               <div class="col-md-6 mb-3">
@@ -167,15 +183,17 @@
                 </label>
                 <input type="number" step="0.01"
                        name="sasaran[realisasi]"
-                       class="form-control"
+                       class="form-control @error('sasaran.realisasi') is-invalid @enderror"
                        value="{{ old('sasaran.realisasi', $sasaran->realisasi ?? '') }}"
                        @if($no != 4) readonly @else required @endif>
+                @error('sasaran.realisasi') <div class="invalid-feedback">{{ $message }}</div> @enderror
               </div>
             </div>
           </div>
         </div>
 
         <hr>
+        @endif
 
         {{-- ================= KEUANGAN ================= --}}
         <h5 class="fw-bold mt-3">Pelaksanaan Keuangan</h5>
@@ -192,6 +210,7 @@
                    required>
             @error('keuangan.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
           </div>
+
           <div class="col-md-6">
             <label class="form-label">
               Realisasi <span class="text-danger">*</span>
@@ -206,7 +225,7 @@
           </div>
         </div>
 
-        {{-- ================= KETERANGAN KEBERHASILAN / HAMBATAN ================= --}}
+        @if(!$isKasubagKeuangan)
         <div class="card mb-4">
           <div class="card-header bg-light">
             <strong>d. Keterangan Keberhasilan / Hambatan</strong>
@@ -227,6 +246,7 @@
             </div>
           </div>
         </div>
+        @endif
 
         <div class="text-center mt-4">
           <button type="submit" class="btn btn-primary px-4">
@@ -236,6 +256,7 @@
             Kembali
           </a>
         </div>
+
       </form>
     </div>
   </div>

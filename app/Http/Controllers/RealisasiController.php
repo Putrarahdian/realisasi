@@ -25,6 +25,24 @@ class RealisasiController extends Controller
     /**
      * 🔒 Hanya superuser & user (seksi) yang boleh mengubah data
      */
+
+    private function isKasubagKeuangan(): bool
+    {
+        $u = auth()->user();
+        return $u && $u->jabatan && $u->jabatan->jenis_jabatan === 'kasubag_keuangan';
+    }
+
+    private function validateKeuangan(Request $request)
+    {
+        $request->validate([
+            'induk_id' => 'required|exists:realisasi_induks,id',
+            'keuangan' => 'required|array',
+            'keuangan.target' => 'required|numeric|min:0',
+            'keuangan.realisasi' => 'required|numeric|min:0',
+        ]);
+    }
+
+
     private function authorizeEditData()
     {
         $user = auth()->user();
@@ -50,7 +68,15 @@ class RealisasiController extends Controller
      */
     private function authorizeBidang($induk)
     {
+        if (!$induk) {
+        abort(404, 'Data induk tidak ditemukan.');
+        }
+
         $user = auth()->user();
+
+        if ($this->isKasubagKeuangan()) {
+            return true; // boleh lihat semua induk
+        }
 
         // Superuser bebas
         if ($user->role === 'superuser') {
@@ -137,7 +163,7 @@ class RealisasiController extends Controller
     }
 
         // 🔹 Filter bidang otomatis
-        if ($user->role !== 'superuser') {
+        if ($user->role !== 'superuser' && !$this->isKasubagKeuangan()) {
             $query->where('bidang_id', $user->bidang_id);
         } elseif ($request->filled('bidang_id')) {
             $query->where('bidang_id', $request->bidang_id);
@@ -174,7 +200,7 @@ class RealisasiController extends Controller
         $baseQuery = RealisasiInduk::query()
             -> where('tahun', $tahunDashboard);
 
-        if ($user -> role !== 'superuser' && $user->bidang_id){
+        if ($user->role !== 'superuser' && !$this->isKasubagKeuangan() && $user->bidang_id) {
             $baseQuery->where('bidang_id', $user->bidang_id);
         }
         
@@ -239,7 +265,7 @@ class RealisasiController extends Controller
         }
 
         // filter bidang
-        if ($user->role !== 'superuser') {
+        if ($user->role !== 'superuser' && !$this->isKasubagKeuangan()) {
             $query->where('bidang_id', $user->bidang_id);
         } elseif ($request->filled('bidang_id')) {
             $query->where('bidang_id', $request->bidang_id);
@@ -314,8 +340,42 @@ class RealisasiController extends Controller
         $index        = (int) $no - 1;
         $kodeTriwulan = self::TRIWULAN[$index] ?? abort(404, 'Triwulan tidak valid');
 
+        // ✅ KASUBAG KEUANGAN: hanya boleh simpan data keuangan
+        if ($this->isKasubagKeuangan()) {
+            $this->validateKeuangan($request);
+        
+            $indukId = $request->input('induk_id');
+            $induk   = RealisasiInduk::findOrFail($indukId);
+        
+            // kasubag boleh lihat semua (authorizeBidang kamu sudah return true)
+            $this->authorizeBidang($induk);
+        
+            // simpan hanya keuangan
+            $k = $request->input('keuangan', []);
+            $targetK   = (float) ($k['target'] ?? 0);
+            $realisasiK= (float) ($k['realisasi'] ?? 0);
+        
+            RealisasiKeuangan::updateOrCreate(
+                ['induk_id' => $indukId, 'triwulan' => $kodeTriwulan],
+                [
+                    'user_id'   => auth()->id(),
+                    'target'    => $targetK,
+                    'realisasi' => $realisasiK,
+                    'capaian'   => 0,
+                ]
+            );
+        
+            $this->hitungUlangCapaianKeuangan($indukId);
+        
+            return redirect()
+                ->route('realisasi.triwulan.index', $no)
+                ->with('success', "Data Keuangan Triwulan {$kodeTriwulan} berhasil disimpan.");
+        }
+
         $rules = [
             'induk_id'             => 'required|exists:realisasi_induks,id',
+
+            'keuangan' => 'required|array',
 
             // OUTPUT
             'output.uraian'        => 'required|string',
@@ -420,7 +480,7 @@ class RealisasiController extends Controller
 
         if (!empty($s)) {
             // Ambil baris sasaran yang sudah ada (kalau ada)
-            $sasaranRow = \App\Models\RealisasiSasaran::where('induk_id', $indukId)->first();
+            $sasaranRow = RealisasiSasaran::where('induk_id', $indukId)->first();
 
             // TW 1: isi uraian + target, realisasi 0
             if ((int)$no === 1) {
@@ -449,7 +509,7 @@ class RealisasiController extends Controller
                 ['induk_id' => $indukId],
                 [
                     'user_id'   => auth()->id(),
-                    'uraian'    => $s['uraian'] ?? ($sasaranRow->uraian ?? '-'),
+                    'uraian' => $s['uraian'] ?? (optional($sasaranRow)->uraian ?? '-'),
                     'target'    => $targetS,
                     'realisasi' => $realisasiS,
                     'capaian'   => $capaianS,
@@ -767,13 +827,35 @@ class RealisasiController extends Controller
     {
         $this->forbidAdminOnKegiatan();
         $this->authorizeEditData();
-
+        
         // mapping 1–4 ke I–IV
         $index        = (int) $no - 1;
         $kodeTriwulan = self::TRIWULAN[$index] ?? abort(404, 'Triwulan tidak valid');
+
+        if ($this->isKasubagKeuangan()) {
+            $induk = RealisasiInduk::with(['keuangans'])->findOrFail($indukId);
+            $this->authorizeBidang($induk);
+        
+            $keuangan = $induk->keuangans->firstWhere('triwulan', $kodeTriwulan);
+        
+            return view('triwulan.edit', [
+                'induk'        => $induk,
+                'informasi'    => null,
+                'output'       => null,
+                'outcome'      => null,
+                'keuangan'     => $keuangan,
+                'keberhasilan' => null,
+                'keb_tw'       => null,
+                'ham_tw'       => null,
+                'kodeTriwulan' => $kodeTriwulan,
+                'no'           => $no,
+                'sasaran'      => null,
+            ]);
+        }
+
         // setelah $keberhasilan = $induk->keberhasilan;
 
-        $induk = RealisasiInduk::with(['outputs', 'outcomes', 'keuangans', 'keberhasilan'])
+        $induk = RealisasiInduk::with(['outputs', 'outcomes', 'keuangans', 'keberhasilan', 'sasaran'])
             ->findOrFail($indukId);
         
             $sasaran = $induk->sasaran instanceof \Illuminate\Support\Collection
@@ -851,6 +933,29 @@ class RealisasiController extends Controller
 
         $induk = RealisasiInduk::findOrFail($indukId);
         $this->authorizeBidang($induk);
+
+        if ($this->isKasubagKeuangan()) {
+                // izinkan update hanya keuangan
+                foreach (['I','II','III','IV'] as $tw) {
+                    $k = $request->input("keuangan.$tw");
+                    if ($k) {
+                        RealisasiKeuangan::updateOrCreate(
+                            ['induk_id' => $indukId, 'triwulan' => $tw],
+                            [
+                                'user_id' => auth()->id(),
+                                'target' => (float)($k['target'] ?? 0),
+                                'realisasi' => (float)($k['realisasi'] ?? 0),
+                                'capaian' => 0,
+                            ]
+                        );
+                    }
+                }
+            
+                $this->hitungUlangCapaianKeuangan($indukId);
+            
+                return redirect()->route('realisasi.show', $indukId)
+                    ->with('success', 'Data keuangan berhasil diperbarui.');
+            }
 
         $info = $request->input('informasi', []);
 
