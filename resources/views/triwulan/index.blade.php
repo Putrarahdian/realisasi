@@ -6,7 +6,7 @@
         <div class="card-body">
 
             <h4 class="fw-bold mb-4 text-center text-dark">
-                 Laporan Kegiatan — Triwulan {{ $tw }}
+                Laporan Kegiatan — Triwulan {{ $tw }}
                 @if(auth()->user()->role === 'superuser')
                     @if(request('bidang_id'))
                         <span class="text">
@@ -25,7 +25,7 @@
             {{-- Baris atas: Tambah Data + Filter --}}
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
 
-                {{-- Tombol tambah data (data induk baru) --}}
+                {{-- Tombol tambah data induk baru --}}
                 <a href="{{ route('realisasi-induk.create') }}"
                    class="btn btn-success px-4 shadow-sm">
                     <i class="bi bi-plus-circle"></i> Tambah Data Kegiatan
@@ -78,7 +78,7 @@
                             <th colspan="3">Outcome (Triwulan {{ $tw }})</th>
                             <th colspan="3">Keuangan (Triwulan {{ $tw }})</th>
 
-                            <th style="width:160px;">Aksi</th>
+                            <th style="width:200px;">Aksi</th>
                         </tr>
                         <tr class="text-center small">
                             <th></th><th></th><th></th><th></th>
@@ -88,18 +88,36 @@
                             <th></th>
                         </tr>
                     </thead>
+
                     <tbody>
                         @forelse($data_induk as $i => $row)
                             @php
+                                $isKasubagKeu = auth()->user()?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
+
                                 $output  = $row->outputs->first();
                                 $outcome = $row->outcomes->first();
                                 $keu     = $row->keuangans->first();
 
-                                $hasTriwulanData =
-                                    ($output  && ($output->target  !== null || $output->realisasi  !== null)) ||
-                                    ($outcome && ($outcome->target !== null || $outcome->realisasi !== null)) ||
-                                    ($keu     && ($keu->target     !== null || $keu->realisasi     !== null));
+                                // ===== Tahap Seksi: dianggap "selesai" kalau Output & Outcome ada (terisi) + Target Keuangan sudah ada =====
+                                $outputOk = $output && (
+                                    $output->target !== null || $output->realisasi !== null || !empty($output->uraian)
+                                );
+
+                                $outcomeOk = $outcome && (
+                                    $outcome->target !== null || $outcome->realisasi !== null || !empty($outcome->uraian)
+                                );
+
+                                $targetKeuOk = ($keu && $keu->target !== null);
+
+                                $selesaiSeksi = $outputOk && $outcomeOk && $targetKeuOk;
+
+                                // ===== Tahap Kasubag: dianggap "selesai" kalau Realisasi Keuangan sudah ada =====
+                                $selesaiKasubag = ($keu && $keu->realisasi !== null);
+
+                                // Kasubag boleh isi kalau target sudah ada, tapi realisasi belum ada
+                                $kasubagBolehIsi = $targetKeuOk && !$selesaiKasubag;
                             @endphp
+
                             <tr>
                                 <td class="text-center">
                                     {{ $data_induk->firstItem() + $i }}
@@ -111,38 +129,50 @@
                                 {{-- Output --}}
                                 <td class="text-end">{{ $output->target ?? '-' }}</td>
                                 <td class="text-end">{{ $output->realisasi ?? '-' }}</td>
-                                <td class="text-end">
-                                    {{ isset($output->capaian) ? $output->capaian.'%' : '-' }}
-                                </td>
+                                <td class="text-end">{{ isset($output->capaian) ? $output->capaian.'%' : '-' }}</td>
 
                                 {{-- Outcome --}}
                                 <td class="text-end">{{ $outcome->target ?? '-' }}</td>
                                 <td class="text-end">{{ $outcome->realisasi ?? '-' }}</td>
-                                <td class="text-end">
-                                    {{ isset($outcome->capaian) ? $outcome->capaian.'%' : '-' }}
-                                </td>
+                                <td class="text-end">{{ isset($outcome->capaian) ? $outcome->capaian.'%' : '-' }}</td>
 
                                 {{-- Keuangan --}}
                                 <td class="text-end">{{ $keu->target ?? '-' }}</td>
                                 <td class="text-end">{{ $keu->realisasi ?? '-' }}</td>
-                                <td class="text-end">
-                                    {{ isset($keu->capaian) ? $keu->capaian.'%' : '-' }}
-                                </td>
+                                <td class="text-end">{{ isset($keu->capaian) ? $keu->capaian.'%' : '-' }}</td>
 
                                 <td class="text-center">
                                     <a href="{{ route('realisasi.show', $row->id) }}"
                                        class="btn btn-sm btn-primary mb-1">
                                         Detail
                                     </a>
-                                    @if (!$hasTriwulanData) 
-                                    <a href="{{ route('realisasi.triwulan.create', ['no' => $no, 'induk' => $row->id]) }}"
-                                       class="btn btn-sm btn-danger text-white mb-1">
-                                        Tambah Data
-                                    </a>
-                                    @else <button class="btn btn-sm btn-secondary mb-1" disabled> 
-                                        Sudah diisi
-                                    </button>
+
+                                    @if($isKasubagKeu)
+                                        {{-- Kasubag Keuangan --}}
+                                        @if($selesaiKasubag)
+                                            <button class="btn btn-sm btn-secondary mb-1" disabled>Sudah diisi</button>
+                                        @else
+                                            @if($kasubagBolehIsi)
+                                                <a href="{{ route('realisasi.triwulan.create', ['no' => $no, 'induk' => $row->id]) }}"
+                                                   class="btn btn-sm btn-danger text-white mb-1">
+                                                    Isi Realisasi Keuangan
+                                                </a>
+                                            @else
+                                                <button class="btn btn-sm btn-warning mb-1" disabled>Menunggu Target Seksi</button>
+                                            @endif
+                                        @endif
+                                    @else
+                                        {{-- Seksi / user biasa --}}
+                                        @if($selesaiSeksi)
+                                            <button class="btn btn-sm btn-secondary mb-1" disabled>Sudah diisi</button>
+                                        @else
+                                            <a href="{{ route('realisasi.triwulan.create', ['no' => $no, 'induk' => $row->id]) }}"
+                                               class="btn btn-sm btn-danger text-white mb-1">
+                                                Tambah Data
+                                            </a>
+                                        @endif
                                     @endif
+
                                 </td>
                             </tr>
                         @empty
@@ -153,6 +183,7 @@
                             </tr>
                         @endforelse
                     </tbody>
+
                 </table>
             </div>
 

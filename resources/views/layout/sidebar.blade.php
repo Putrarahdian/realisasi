@@ -59,6 +59,19 @@
           <i class="material-icons">description</i> Rekap
         </a>
       </li>
+      
+        @php
+          $isKasubagKeu = auth()->user()?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
+        @endphp
+
+        @if($isKasubagKeu)
+          <li class="nav-item">
+            <a class="nav-link" href="{{ route('keuangan.index') }}">
+              <i class="bi bi-cash-coin me-2"></i> Keuangan
+            </a>
+          </li>
+        @endif
+
 
     {{-- 🧑‍💼 Menu khusus Superuser/Admin --}}
     @if(in_array(Auth()->user()->role, ['superuser','admin']))

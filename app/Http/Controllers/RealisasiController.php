@@ -7,7 +7,6 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RealisasiExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\InformasiUmum;
 use App\Models\RealisasiOutput;
 use App\Models\RealisasiOutcome;
 use App\Models\RealisasiSasaran;
@@ -37,7 +36,6 @@ class RealisasiController extends Controller
         $request->validate([
             'induk_id' => 'required|exists:realisasi_induks,id',
             'keuangan' => 'required|array',
-            'keuangan.target' => 'required|numeric|min:0',
             'keuangan.realisasi' => 'required|numeric|min:0',
         ]);
     }
@@ -130,8 +128,6 @@ class RealisasiController extends Controller
             $row->save();
         }
     }
-
-
 
     public function index(Request $request)
     {
@@ -297,15 +293,18 @@ class RealisasiController extends Controller
         $index        = (int)$no - 1;
         $kodeTriwulan = self::TRIWULAN[$index] ?? abort(404, 'Triwulan tidak valid');
 
-        // di atas return view('triwulan.create', [...]);
-        $sasaran = RealisasiSasaran::where('induk_id', $indukId)->first();
         $induk = RealisasiInduk::findOrFail($indukId);
         $this->authorizeBidang($induk);
 
-        $twt = null;
-        if ($no > 1) {
-            $tws = self::TRIWULAN[0];
+        $sasaran = RealisasiSasaran::where('induk_id', $indukId)->first();
 
+        $keuangan = RealisasiKeuangan::where('induk_id', $indukId)
+            ->where('triwulan', $kodeTriwulan)
+            ->first();
+
+        $twt = null;
+        if ((int)$no > 1) {
+            $tws = self::TRIWULAN[0];
             $twt = [
                 'output' => RealisasiOutput::where('induk_id', $indukId)
                     -> where ('triwulan', $tws)
@@ -320,12 +319,12 @@ class RealisasiController extends Controller
             'induk'        => $induk,
             'output'       => null,
             'outcome'      => null,
-            'keuangan'     => null,
+            'keuangan'     => $keuangan,
             'keberhasilan' => null,
             'kodeTriwulan' => $kodeTriwulan,
             'no'           => $no,
-            'twt'           => $twt,
-            'sasaran'           => $sasaran,
+            'twt'          => $twt,
+            'sasaran'      => $sasaran,
         ]);
     }
 
@@ -346,24 +345,26 @@ class RealisasiController extends Controller
         
             $indukId = $request->input('induk_id');
             $induk   = RealisasiInduk::findOrFail($indukId);
-        
-            // kasubag boleh lihat semua (authorizeBidang kamu sudah return true)
             $this->authorizeBidang($induk);
+
+            $rowKeu = RealisasiKeuangan::where('induk_id', $indukId)
+                ->where('triwulan', $kodeTriwulan)
+                ->first();
+
+            if (!$rowKeu || $rowKeu->target <= 0) {
+                return redirect()
+                    ->route('realisasi.triwulan.index', $no)
+                    ->with('error', "Target Keuangan Triwulan {$kodeTriwulan} belum diisi Seksi.");
+            }
         
-            // simpan hanya keuangan
             $k = $request->input('keuangan', []);
-            $targetK   = (float) ($k['target'] ?? 0);
             $realisasiK= (float) ($k['realisasi'] ?? 0);
-        
-            RealisasiKeuangan::updateOrCreate(
-                ['induk_id' => $indukId, 'triwulan' => $kodeTriwulan],
-                [
-                    'user_id'   => auth()->id(),
-                    'target'    => $targetK,
-                    'realisasi' => $realisasiK,
-                    'capaian'   => 0,
-                ]
-            );
+
+            $rowKeu->update([
+                'user_id'   => auth()->id(),
+                'realisasi' => $realisasiK,
+                'capaian'   => 0,
+            ]);
         
             $this->hitungUlangCapaianKeuangan($indukId);
         
@@ -373,7 +374,7 @@ class RealisasiController extends Controller
         }
 
         $rules = [
-            'induk_id'             => 'required|exists:realisasi_induks,id',
+            'induk_id'   => 'required|exists:realisasi_induks,id',
 
             'keuangan' => 'required|array',
 
@@ -387,7 +388,6 @@ class RealisasiController extends Controller
 
             // KEUANGAN (selalu wajib tiap TW)
             'keuangan.target'      => 'required|numeric|min:0',
-            'keuangan.realisasi'   => 'required|numeric|min:0',
         ];
 
         // 🔹 Target Output & Outcome wajib HANYA di TW I
@@ -519,16 +519,18 @@ class RealisasiController extends Controller
 
         // ===================== KEUANGAN =====================
         $k = $request->input('keuangan', []);
-
         $targetK = (float) ($k['target'] ?? 0);
-        $realisasiK = (float) ($k['realisasi'] ?? 0);
 
+        $existingKeu = RealisasiKeuangan::where('induk_id', $indukId)
+            ->where('triwulan', $kodeTriwulan)
+            ->first();
+    
             RealisasiKeuangan::updateOrCreate(
                 ['induk_id' => $indukId, 'triwulan' => $kodeTriwulan],
                 [
                     'user_id'   => auth()->id(),
                     'target'    => $targetK,
-                    'realisasi' => $realisasiK,
+                    'realisasi' => $existingKeu?->realisasi,
                     'capaian'   => 0,
                 ]
             );
@@ -611,11 +613,6 @@ class RealisasiController extends Controller
         $this->authorizeEditData();
 
         $request->validate([
-            // Validasi umum
-            'informasi.tahun'           => 'required|string|max:4',
-            'informasi.instansi'        => 'required|string',
-            'informasi.penanggung_jawab'=> 'required|string',
-
             // Output dan Outcome
             'output.*.uraian'    => 'required|string',
             'output.*.target'    => 'required|numeric|min:1',
@@ -631,7 +628,6 @@ class RealisasiController extends Controller
 
             // Keuangan
             'keuangan.*.target'  => 'required|numeric|min:1',
-            'keuangan.*.realisasi'=> 'required|numeric|min:0',
 
             // Keberhasilan
             'keberhasilan.keberhasilan' => 'required|string',
@@ -645,22 +641,9 @@ class RealisasiController extends Controller
 
         $userId = Auth::id();
 
-        // Cek apakah user sudah pernah mengisi
-        if (InformasiUmum::where('user_id', $userId)->exists()) {
-            return redirect()->route('realisasi.index')->with('error', 'Anda sudah mengisi sebelumnya.');
-        }
-
         // Buat data induk kosong (jika belum punya field input tambahan)
         $induk = RealisasiInduk::create([]);
 
-        // Simpan Informasi Umum
-        InformasiUmum::create([
-            'user_id'          => $userId,
-            'triwulan'         => 'I-IV',
-            'tahun'            => $request->input('informasi.tahun'),
-            'instansi'         => $request->input('informasi.instansi'),
-            'penanggung_jawab' => $request->input('informasi.penanggung_jawab'),
-        ]);
         // Hitung total target keuangan dari input (TW I–IV)
         $totalTargetKeu = 0;
         foreach (self::TRIWULAN as $tw) {
@@ -703,7 +686,7 @@ class RealisasiController extends Controller
         $k = $request->input("keuangan.$tw");
         if ($k) {
             $targetK    = (float) ($k['target'] ?? 0);
-            $realisasiK = (float) ($k['realisasi'] ?? 0);
+            $realisasiK = 0;
 
             RealisasiKeuangan::create([
                 'user_id'   => $userId,
@@ -811,7 +794,7 @@ class RealisasiController extends Controller
         $this->authorizeBidang($induk);
 
         // ambil data informasi umum berdasarkan user aktif
-        $informasi = InformasiUmum::where('user_id', auth()->id())->first();
+        $informasi = null;
 
         // siapkan data tambahan agar tidak error di view
         $outputs      = $induk->outputs->groupBy('triwulan');
@@ -866,7 +849,7 @@ class RealisasiController extends Controller
         $this->authorizeBidang($induk);
 
         // informasi umum milik user aktif (kalau mau dipakai di view)
-        $informasi = InformasiUmum::where('user_id', auth()->id())->first();
+        $informasi = null;
 
         // ambil hanya baris untuk triwulan ini
         $output       = $induk->outputs->firstWhere('triwulan', $kodeTriwulan);
@@ -935,38 +918,30 @@ class RealisasiController extends Controller
         $this->authorizeBidang($induk);
 
         if ($this->isKasubagKeuangan()) {
-                // izinkan update hanya keuangan
                 foreach (['I','II','III','IV'] as $tw) {
                     $k = $request->input("keuangan.$tw");
-                    if ($k) {
-                        RealisasiKeuangan::updateOrCreate(
-                            ['induk_id' => $indukId, 'triwulan' => $tw],
-                            [
-                                'user_id' => auth()->id(),
-                                'target' => (float)($k['target'] ?? 0),
-                                'realisasi' => (float)($k['realisasi'] ?? 0),
-                                'capaian' => 0,
-                            ]
-                        );
+                    if (!$k) continue; 
+                    
+                    $rowKeu = RealisasiKeuangan::where('induk_id', $indukId)
+                        ->where('triwulan', $tw)
+                        ->first();
+
+                    if (!$rowKeu || $rowKeu->target <= 0) {
+                        continue;
                     }
-                }
-            
+
+                    $rowKeu->update([
+                        'user_id'   => auth()->id(),
+                        'realisasi' => (float)($k['realisasi'] ?? 0),
+                        'capaian'   => 0,
+                ]);
+            }
                 $this->hitungUlangCapaianKeuangan($indukId);
             
                 return redirect()->route('realisasi.show', $indukId)
                     ->with('success', 'Data keuangan berhasil diperbarui.');
             }
-
-        $info = $request->input('informasi', []);
-
-        // Update Informasi Umum
-        InformasiUmum::updateOrCreate(
-            ['user_id' => auth()->id()],
-            [
-                'tahun'             => $info['tahun'] ?? date('Y'),
-                'triwulan'          => 'I-IV',
-            ]
-        );
+            
         // Hitung total target keuangan dari input update
         $totalTargetKeu = 0;
         foreach (['I', 'II', 'III', 'IV'] as $twTmp) {
@@ -1031,20 +1006,24 @@ class RealisasiController extends Controller
 
         // Keuangan
         $k = $request->input("keuangan.$tw");
-        if (!empty($k['target']) || !empty($k['realisasi'])) {
-            $targetK    = (float) ($k['target'] ?? 0);
-            $realisasiK = (float) ($k['realisasi'] ?? 0);
-
+        if ($k) {
+            $targetK = (float) ($k['target'] ?? 0);
+        
+            $existing = RealisasiKeuangan::where('induk_id', $indukId)
+                ->where('triwulan', $tw)
+                ->first();
+        
             RealisasiKeuangan::updateOrCreate(
                 ['induk_id' => $indukId, 'triwulan' => $tw],
                 [
                     'user_id'   => auth()->id(),
                     'target'    => $targetK,
-                    'realisasi' => $realisasiK,
+                    'realisasi' => $existing?->realisasi, // dikunci
                     'capaian'   => 0,
                 ]
             );
         }
+
     }
         $this->hitungUlangCapaianKeuangan($induk->id);
 

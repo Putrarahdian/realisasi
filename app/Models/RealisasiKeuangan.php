@@ -24,4 +24,8 @@ class RealisasiKeuangan extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+    public function induk()
+    {
+        return $this->belongsTo(RealisasiInduk::class, 'induk_id');
+    }
 }

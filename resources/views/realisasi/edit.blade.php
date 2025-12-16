@@ -186,7 +186,6 @@
                     <th>Uraian / Indikator</th>
                     <th style="width:130px;">Target</th>
                     <th style="width:130px;">Realisasi</th>
-                    <th style="width:130px;">Capaian (%)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -219,14 +218,6 @@
                              value="{{ old('sasaran.realisasi', optional($sasaran)->realisasi) }}"
                              class="form-control text-end form-control-soft"
                              @if($isKasubagKeu) readonly @endif>
-                    </td>
-
-                    <td class="text-center">
-                      @if($sasaran && $sasaran->target > 0)
-                        {{ number_format($sasaran->realisasi / $sasaran->target * 100, 2) }}%
-                      @else
-                        -
-                      @endif
                     </td>
                   </tr>
                 </tbody>

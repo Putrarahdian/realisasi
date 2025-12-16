@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RealisasiController;
 use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\KeuanganController;
 
 // ===========================
 // 🌐 LANDING (publik)
@@ -113,4 +114,8 @@ Route::middleware('auth')->group(function () {
             return view('dashboard.user');
         })->name('dashboard.user');
     });
+
+    // kasubag keuangan //
+    Route::get('/keuangan', [KeuanganController::class, 'index'])
+    ->name('keuangan.index');
 });
