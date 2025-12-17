@@ -329,7 +329,9 @@ document.addEventListener('DOMContentLoaded', function () {
     
       return;
     }
-
+    
+    if (bidangSelect) bidangSelect.disabled = false;
+    if (seksiSelect)  seksiSelect.disabled  = false;
 
 
     if (clear) {

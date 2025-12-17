@@ -108,6 +108,12 @@ class AdminController extends Controller
     'password.numbers' => 'Password harus mengandung angka.',
     'password.symbols' => 'Password harus mengandung simbol.',
     ];
+
+    $request->merge([
+      'bidang_id' => $request->input('bidang_id') ?: null,
+      'seksi_id'  => $request->input('seksi_id') ?: null,
+    ]);
+
         // 🧱 Validasi umum
         $request->validate([
             'name' => 'required|string|max:100',
@@ -126,6 +132,13 @@ class AdminController extends Controller
         }
 
         $jabatan = Jabatan::find($request->jabatan_id)?->nama;
+
+        $jenis = Jabatan::find($request->jabatan_id)?->jenis_jabatan;
+
+        if ($jenis === 'kasubag_keuangan') {
+            $request->merge(['bidang_id' => null, 'seksi_id' => null]);
+        }
+
 
         // 🔒 Kepala Dinas (maks 1 orang)
         if ($jabatan === 'Kepala Dinas') {
@@ -213,6 +226,12 @@ class AdminController extends Controller
     'password.symbols' => 'Password harus mengandung simbol.',
     ];
 
+    $request->merge([
+      'bidang_id' => $request->input('bidang_id') ?: null,
+      'seksi_id'  => $request->input('seksi_id') ?: null,
+    ]);
+
+
         $request->validate([
             'name' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
@@ -226,6 +245,13 @@ class AdminController extends Controller
         
         $current = auth()->user();
         $jabatan = Jabatan::find($request->jabatan_id)?->nama;
+
+        $jenis = Jabatan::find($request->jabatan_id)?->jenis_jabatan;
+
+        if ($jenis === 'kasubag_keuangan') {
+            $request->merge(['bidang_id' => null, 'seksi_id' => null]);
+        }
+
 
         // 🔒 Validasi per jabatan (sama seperti store)
         if ($jabatan === 'Kepala Dinas') {
