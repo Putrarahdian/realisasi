@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
             `<option value="${s.id}">${s.nama}</option>`);
         });
         // kalau ada old('seksi_id'), coba pilih lagi
-        const oldSeksi = '{{ old('seksi_id') }}';
+        const oldSeksi = "{{ old('seksi_id') }}";
         if (oldSeksi) {
           seksiSelect.value = oldSeksi;
         }
@@ -242,10 +242,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const jenis = jabatanSelect.options[jabatanSelect.selectedIndex]?.dataset?.jenis || '';
 
-    // Kosongkan dulu
-    // (kalau kamu tidak mau dikosongkan setiap ganti jabatan, ini bisa dihapus)
-    //bidangSelect.value = '';
-    //seksiSelect.value  = '';
+    if (jenis === 'kasubag_keuangan') {
+      bidangSelect.value = '';
+      seksiSelect.value  = '';
+      bidangSelect.disabled = true;
+      seksiSelect.disabled  = true;
+    return;
+    }
 
     if (jenis === 'kepala_dinas' || jenis === 'sekretaris') {
       bidangSelect.disabled = true;

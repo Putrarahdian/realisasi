@@ -29,8 +29,10 @@ class RoleMiddleware
             abort(403, 'Akses Ditolak! Anda tidak memiliki izin untuk mengakses halaman ini.');
         }
 
+        $isKasubag = $user->jabatan && $user->jabatan->jenis_jabatan === 'kasubag_keuangan';
+
         // 🧩 Filter bidang otomatis untuk semua user selain superuser
-        if ($user->role !== 'superuser') {
+        if ($user->role !== 'superuser' && !$isKasubag) {
             $request->merge(['filter_bidang_id' => $user->bidang_id]);
         }
 

@@ -25,9 +25,10 @@
         // Superuser utama (id = 1 + role superuser)
         $isMasterSuperuser = ($target->id === 1 && $target->role === 'superuser');
 
-        // 3 jabatan tetap yang harus dikunci kanan-nya
+        // jabatan tetap yang harus dikunci kanan-nya
         $lockedTitles = ['Kepala Dinas', 'Sekretaris', 'Kepala Bidang'];
         $isLockedByTitle = in_array($targetJabatanNama, $lockedTitles);
+        $isKasubagTarget = ($targetJabatan->jenis_jabatan ?? null) === 'kasubag_keuangan';
 
         // 6 akun spesial = 3 jabatan di atas + superuser utama
         $lockRightSide = $isLockedByTitle || $isMasterSuperuser;
@@ -140,7 +141,7 @@
               <option value="">-- Pilih Bidang --</option>
               @foreach($bidangs as $b)
                 <option value="{{ $b->id }}"
-                        {{ (string)old('bidang_id', $target->bidang_id ?? '') === (string)$b->id ? 'selected' : '' }}>
+                {{ (string)old('bidang_id', $isKasubagTarget ? '' : ($target->bidang_id ?? '')) === (string)$b->id ? 'selected' : '' }}>
                   {{ $b->nama }}
                 </option>
               @endforeach
@@ -157,8 +158,8 @@
               <option value="">-- Pilih Seksi --</option>
               @foreach($seksis as $s)
                 <option value="{{ $s->id }}"
-                        {{ (string)old('seksi_id', $target->seksi_id ?? '') === (string)$s->id ? 'selected' : '' }}>
-                  {{ $s->nama }}
+                {{ (string)old('seksi_id', $isKasubagTarget ? '' : ($target->seksi_id ?? '')) === (string)$s->id ? 'selected' : '' }}>
+                {{ $s->nama }}
                 </option>
               @endforeach
             </select>
@@ -202,6 +203,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // role terkunci dari server? (misal akun spesial atau admin yang login)
   const roleLockedInitially = roleSelect?.dataset.locked === '1';
+
+  function getJenisJabatan() {
+  return jabatanSelect?.options[jabatanSelect.selectedIndex]?.dataset?.jenis || '';
+}
 
   // 👁️ Toggle password visibility
   if (togglePassword && passwordInput) {
@@ -278,6 +283,24 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
+    function ensureHidden(name, value) {
+      let el = document.querySelector(`input[type="hidden"][name="${name}"]`);
+      if (!el) {
+        el = document.createElement('input');
+        el.type = 'hidden';
+        el.name = name;
+        document.querySelector('form')?.appendChild(el);
+      }
+      el.value = value;
+    }
+
+    function removeHidden(name) {
+      const el = document.querySelector(`input[type="hidden"][name="${name}"]`);
+      if (el) el.remove();
+    }
+
+
+
   // Kunci dinamis & kosongkan saat JABATAN diubah
   function updateLock({ clear = false } = {}) {
     if (!jabatanSelect) return;
@@ -289,7 +312,26 @@ document.addEventListener('DOMContentLoaded', function () {
     
     const jenis = jabatanSelect.options[jabatanSelect.selectedIndex]?.dataset?.jenis || '';
 
-    // Hanya kosongkan kalau dipanggil dengan clear = true (saat user ganti jabatan)
+    removeHidden('bidang_id');
+    removeHidden('seksi_id');
+    
+    if (jenis === 'kasubag_keuangan') {
+      if (clear) {
+        if (!initiallyLocked.bidang && bidangSelect) bidangSelect.value = '';
+        if (!initiallyLocked.seksi  && seksiSelect)  seksiSelect.value  = '';
+      }
+    
+      if (bidangSelect) bidangSelect.disabled = true;
+      if (seksiSelect)  seksiSelect.disabled  = true;
+    
+      ensureHidden('bidang_id', '');
+      ensureHidden('seksi_id', '');
+    
+      return;
+    }
+
+
+
     if (clear) {
       if (!initiallyLocked.bidang) bidangSelect.value = '';
       if (!initiallyLocked.seksi)  seksiSelect.value  = '';
