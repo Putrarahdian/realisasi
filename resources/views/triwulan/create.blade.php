@@ -240,6 +240,7 @@
               <div class="mb-3">
                 <label class="form-label">Keberhasilan (Triwulan {{ $kodeTriwulan }})</label>
                 <textarea name="keberhasilan_triwulan"
+                          id="keberhasilanEditor"
                           class="form-control"
                           rows="3">{{ old('keberhasilan_triwulan') }}</textarea>
               </div>
@@ -247,6 +248,7 @@
               <div class="mb-3">
                 <label class="form-label">Hambatan (Triwulan {{ $kodeTriwulan }})</label>
                 <textarea name="hambatan_triwulan"
+                          id="hambatanEditor"
                           class="form-control"
                           rows="3">{{ old('hambatan_triwulan') }}</textarea>
               </div>
@@ -267,4 +269,17 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const makeEditor = (selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    ClassicEditor.create(el).catch(console.error);
+  };
+
+  makeEditor('#keberhasilanEditor');
+  makeEditor('#hambatanEditor');
+});
+</script>
 @endsection

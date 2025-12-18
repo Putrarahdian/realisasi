@@ -219,54 +219,73 @@
     {{-- ===================== 6. KETERANGAN ===================== --}}
     <h5 class="fw-bold mt-5">6. Keterangan Keberhasilan / Hambatan</h5>
 
-@php
-    $gabungKeb = [];
-    $gabungHam = [];
+    @php
+        $gabungKeb = [];
+        $gabungHam = [];
 
-    if ($keberhasilan) {
-        foreach ([1, 2, 3, 4] as $twNo) {
-            $kField = 'keberhasilan_tw' . $twNo;
-            $hField = 'hambatan_tw' . $twNo;
+        if ($keberhasilan) {
+            foreach ([1, 2, 3, 4] as $twNo) {
+                $kField = 'keberhasilan_tw' . $twNo;
+                $hField = 'hambatan_tw' . $twNo;
 
-            if (!empty($keberhasilan->$kField)) {
-                $gabungKeb[] = 'TW ' . $twNo . ' : ' . $keberhasilan->$kField;
-            }
-            if (!empty($keberhasilan->$hField)) {
-                $gabungHam[] = 'TW ' . $twNo . ' : ' . $keberhasilan->$hField;
+                $kVal = $keberhasilan->$kField ?? '';
+                $hVal = $keberhasilan->$hField ?? '';
+
+                if (trim($kVal) !== '') {
+                    $gabungKeb[] = [
+                        'label' => 'TW ' . $twNo,
+                        'text'  => $kVal,
+                    ];
+                }
+
+                if (trim($hVal) !== '') {
+                    $gabungHam[] = [
+                        'label' => 'TW ' . $twNo,
+                        'text'  => $hVal,
+                    ];
+                }
             }
         }
-    }
-@endphp
+    @endphp
 
-@if ($keberhasilan)
-    <div class="mb-3">
-        <strong>a. Keberhasilan :</strong>
-        @if($gabungKeb)
-            <ul class="mt-2" style="list-style: none; padding-left: 0;">
-                @foreach($gabungKeb as $item)
-                    <li>- {{ $item }}</li>
-                @endforeach
-            </ul>
-        @else
-            <p class="mt-2">- Tidak ada data keberhasilan.</p>
-        @endif
-    </div>
+    @if ($keberhasilan)
+        <div class="mb-3">
+            <strong>a. Keberhasilan :</strong>
 
-    <div class="mb-4">
-        <strong>b. Hambatan :</strong>
-        @if($gabungHam)
-            <ul class="mt-2" style="list-style: none; padding-left: 0;">
-                @foreach($gabungHam as $item)
-                    <li>- {{ $item }}</li>
-                @endforeach
-            </ul>
-        @else
-            <p class="mt-2">- Tidak ada data hambatan.</p>
-        @endif
-    </div>
-@else
-    <p>- Belum ada data keberhasilan atau hambatan</p>
-@endif
+            @if($gabungKeb)
+                <ul class="mt-2" style="list-style: none; padding-left: 0;">
+                    @foreach($gabungKeb as $item)
+                        <li class="mb-2">
+                            <strong>- {{ $item['label'] }} :</strong><br>
+                            {!! nl2br(e($item['text'])) !!}
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="mt-2">- Tidak ada data keberhasilan.</p>
+            @endif
+        </div>
+
+        <div class="mb-4">
+            <strong>b. Hambatan :</strong>
+
+            @if($gabungHam)
+                <ul class="mt-2" style="list-style: none; padding-left: 0;">
+                    @foreach($gabungHam as $item)
+                        <li class="mb-2">
+                            <strong>- {{ $item['label'] }} :</strong><br>
+                            {!! nl2br(e($item['text'])) !!}
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="mt-2">- Tidak ada data hambatan.</p>
+            @endif
+        </div>
+    @else
+        <p>- Belum ada data keberhasilan atau hambatan</p>
+    @endif
+
 
     {{-- ============ TABEL 7: 2 TAHUN SEBELUMNYA ============ --}}
     <h5 class="fw-bold mt-5">7. Hasil Pelaksanaan Kegiatan 2 Tahun Sebelumnya</h5>

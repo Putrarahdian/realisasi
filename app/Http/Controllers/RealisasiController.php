@@ -220,7 +220,7 @@ class RealisasiController extends Controller
             $belumDiisi[$tw] = $qBelum->get();
         }
 
-        return view('realisasi.index', compact('data_induk', 'tahun','seksis', 'bidangs','user') + [
+        return view('realisasi_induk.show', compact('data_induk', 'tahun','seksis', 'bidangs','user') + [
             'tahunDashboard' => $tahunDashboard,
             'triwulans' => $triwulans,
             'belumDiisi' => $belumDiisi,
@@ -538,8 +538,8 @@ class RealisasiController extends Controller
         
 
         // ===================== KEBERHASILAN / HAMBATAN PER TRIWULAN =====================
-        $teksKeberhasilan = trim($request->input('keberhasilan_triwulan', ''));
-        $teksHambatan     = trim($request->input('hambatan_triwulan', ''));
+        $teksKeberhasilan = trim(strip_tags($request->input('keberhasilan_triwulan', '')));
+        $teksHambatan     = trim(strip_tags($request->input('hambatan_triwulan', '')));
 
         // kalau dua-duanya kosong, tidak usah simpan apa-apa
         if ($teksKeberhasilan !== '' || $teksHambatan !== '') {
@@ -938,7 +938,7 @@ class RealisasiController extends Controller
             }
                 $this->hitungUlangCapaianKeuangan($indukId);
             
-                return redirect()->route('realisasi.show', $indukId)
+                return redirect()->route('realisasi_induk.show', $indukId)
                     ->with('success', 'Data keuangan berhasil diperbarui.');
             }
             
@@ -1063,22 +1063,24 @@ class RealisasiController extends Controller
         // Update Keberhasilan 
         $keb = $request->input('keberhasilan', []);
 
+        $clean = fn($v) => $v === null ? null : trim(strip_tags($v));
+
         RealisasiKeberhasilan::updateOrCreate(
             ['induk_id' => $indukId],
             [
-                'user_id'       => auth()->id(),
-            'keberhasilan_tw1' => $keb['keberhasilan_tw1'] ?? null,
-            'keberhasilan_tw2' => $keb['keberhasilan_tw2'] ?? null,
-            'keberhasilan_tw3' => $keb['keberhasilan_tw3'] ?? null,
-            'keberhasilan_tw4' => $keb['keberhasilan_tw4'] ?? null,
-            'hambatan_tw1'     => $keb['hambatan_tw1'] ?? null,
-            'hambatan_tw2'     => $keb['hambatan_tw2'] ?? null,
-            'hambatan_tw3'     => $keb['hambatan_tw3'] ?? null,
-            'hambatan_tw4'     => $keb['hambatan_tw4'] ?? null,
+            'user_id'       => auth()->id(),
+            'keberhasilan_tw1' => $clean($keb['keberhasilan_tw1'] ?? null),
+            'keberhasilan_tw2' => $clean($keb['keberhasilan_tw2'] ?? null),
+            'keberhasilan_tw3' => $clean($keb['keberhasilan_tw3'] ?? null),
+            'keberhasilan_tw4' => $clean($keb['keberhasilan_tw4'] ?? null),
+            'hambatan_tw1'     => $clean($keb['hambatan_tw1'] ?? null),
+            'hambatan_tw2'     => $clean($keb['hambatan_tw2'] ?? null),
+            'hambatan_tw3'     => $clean($keb['hambatan_tw3'] ?? null),
+            'hambatan_tw4'     => $clean($keb['hambatan_tw4'] ?? null),
             ]
         );
 
-        return redirect()->route('realisasi.show', $indukId)
+        return redirect()->route('realisasi_induk.show', $indukId)
             ->with('success', 'Data berhasil diperbarui.');
     }
 
@@ -1100,7 +1102,7 @@ class RealisasiController extends Controller
 
         $riwayat2Tahun = $this->getRiwayat2Tahun($induk);
 
-        return view('realisasi.show', compact('induk', 'riwayat2Tahun'));
+        return view('realisasi_induk.show', compact('induk', 'riwayat2Tahun'));
     }
 
     public function updateInduk(Request $request, $id)
@@ -1237,7 +1239,7 @@ class RealisasiController extends Controller
         $data_induk = $query->orderBy('id', 'desc')->paginate(10);
         $data_induk->appends($request->only('tahun', 'bidang_id', 'seksi_id'));
 
-        return view('realisasi.rekap', compact('data_induk', 'tahun', 'bidangs', 'seksis'));
+        return view('rekap.rekap', compact('data_induk', 'tahun', 'bidangs', 'seksis'));
     }
     public function rekapAnak($id)
     {
@@ -1266,7 +1268,7 @@ class RealisasiController extends Controller
 
         $riwayat2Tahun = $this->getRiwayat2Tahun($induk);
 
-        return view('realisasi.rekapanak', compact(
+        return view('rekap.rekapanak', compact(
             'induk',
             'outputs',
             'outcomes',
@@ -1426,7 +1428,7 @@ class RealisasiController extends Controller
                 ->first();
         }
 
-        $pdf = Pdf::loadView('realisasi.rekap_pdf', [
+        $pdf = Pdf::loadView('rekap.rekap_pdf', [
             'induk'        => $induk,
             'outputs'      => $outputs,
             'outcomes'     => $outcomes,
@@ -1499,7 +1501,7 @@ class RealisasiController extends Controller
         $induk->save();
 
         return redirect()
-            ->route('realisasi.rekap.anak', $induk->id)
+            ->route('rekap.rekap.anak', $induk->id)
             ->with('success', 'Disposisi berhasil disimpan.');
     }
 

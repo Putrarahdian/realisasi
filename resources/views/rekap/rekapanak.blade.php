@@ -363,9 +363,9 @@
                 <span class="badge bg-secondary">Belum diisi</span>
               @endif
             </div>
-            <p class="small mb-0 text-muted" style="white-space: pre-line;">
-              {{ $induk->disposisi_kabid ?? 'Belum ada catatan dari Kepala Bidang.' }}
-            </p>
+            <div class="small mb-0 text-muted">
+              {!! $induk->disposisi_kabid ?? 'Belum ada catatan dari Kepala Bidang.' !!}
+            </div>
           </div>
         </div>
 
@@ -380,9 +380,9 @@
                 <span class="badge bg-secondary">Belum diisi</span>
               @endif
             </div>
-            <p class="small mb-0 text-muted" style="white-space: pre-line;">
-              {{ $induk->disposisi_kadis ?? 'Belum ada catatan dari Kepala Dinas.' }}
-            </p>
+            <div class="small mb-0 text-muted">
+              {!! $induk->disposisi_kadis ?? 'Belum ada catatan dari Kepala Dinas.' !!}
+            </div>
           </div>
         </div>
       </div>
@@ -406,9 +406,10 @@
             <label class="form-label">Disposisi</label>
             <textarea
               name="disposisi"
+              id="disposisiEditor"
               class="form-control @error('disposisi') is-invalid @enderror"
               rows="3"
-            >{{ old('disposisi', $jabatan === 'Kepala Bidang' ? $induk->disposisi_kabid : $induk->disposisi_kadis) }}</textarea>
+              >{!! old('disposisi', $jabatan === 'Kepala Bidang' ? $induk->disposisi_kabid : $induk->disposisi_kadis) !!}</textarea>
 
             @error('disposisi')
               <div class="invalid-feedback">
@@ -430,4 +431,15 @@
     </div>
   </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const makeEditor = (selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    ClassicEditor.create(el).catch(console.error);
+  };
+
+  makeEditor('#disposisiEditor');
+});
+</script>
 @endsection
