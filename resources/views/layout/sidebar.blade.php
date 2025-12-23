@@ -61,10 +61,12 @@
       </li>
       
         @php
-          $isKasubagKeu = auth()->user()?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
+          $user = auth()->user();
+          $isKasubagKeu = $user?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
+          $isSuperuser  = $user?->role === 'superuser';
         @endphp
 
-        @if($isKasubagKeu)
+        @if($isKasubagKeu || $isSuperuser)
           <li class="nav-item">
             <a class="nav-link" href="{{ route('keuangan.index') }}">
               <i class="bi bi-cash-coin me-2"></i> Keuangan

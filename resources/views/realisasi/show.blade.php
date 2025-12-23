@@ -43,7 +43,7 @@
             <tbody>
                 @php
                 // target tahunan diambil dari TW I (kalau ada)
-                $totalTarget   = (float) ($outputs['I'][0]->target ?? 0);
+                $totalTargetO   = 0;
                 $totalRealisasiO  = 0;
             @endphp
 
@@ -65,11 +65,11 @@
                 {{-- Baris TOTAL OUTPUT --}}
                 <tr class="fw-bold table-light">
                     <td colspan="3" class="text-center">Jumlah</td>
-                    <td>{{ $totalTarget ?: '-' }}</td>
+                    <td>{{ $totalTargetO ?: '-' }}</td>
                     <td>{{ $totalRealisasiO ?: '-' }}</td>
                     <td>
-                        @if($totalTarget > 0)
-                            {{ round($totalRealisasiO / $totalTarget* 100, 2) }}%
+                        @if($totalTargetO > 0)
+                            {{ round($totalRealisasiO / $totalTargetO* 100, 2) }}%
                         @else
                             -
                         @endif
@@ -95,7 +95,7 @@
             </thead>
             <tbody>
                 @php
-                $totalTargetOc  = (float) ($outcomes['I'][0]->target ?? 0);
+                $totalTargetOc  = 0;
                 $totalRealisasiOc = 0;
             @endphp
 

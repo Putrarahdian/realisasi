@@ -176,6 +176,8 @@
 
             @php
               $sasaran = $induk->sasaran;
+              // target sasaran = total target output (semua TW), sesuai yang diminta
+              $targetSasaran = collect($outputs)->flatten()->sum('target');
             @endphp
 
             <div class="table-responsive table-section">
@@ -201,15 +203,16 @@
                     </td>
 
                     <td>
+                      {{-- tampil readonly --}}
                       <input type="number"
-                             id="sasaran-target-display"
-                             value="{{ old('sasaran.target', optional($sasaran)->target) }}"
+                             value="{{ $targetSasaran }}"
                              class="form-control text-end form-control-soft"
                              readonly>
+
+                      {{-- tetap dikirim ke backend --}}
                       <input type="hidden"
-                             id="sasaran-target-hidden"
                              name="sasaran[target]"
-                             value="{{ old('sasaran.target', optional($sasaran)->target) }}">
+                             value="{{ $targetSasaran }}">
                     </td>
 
                     <td>
@@ -219,6 +222,7 @@
                              class="form-control text-end form-control-soft"
                              @if($isKasubagKeu) readonly @endif>
                     </td>
+
                   </tr>
                 </tbody>
               </table>
@@ -254,13 +258,15 @@
                         <input type="number"
                                name="keuangan[{{ $tw }}][target]"
                                value="{{ $k->target ?? '' }}"
-                               class="form-control text-end form-control-soft">
+                               class="form-control text-end form-control-soft"
+                               @if($isKasubagKeu) readonly @endif>
                       </td>
                       <td>
                         <input type="number"
                                name="keuangan[{{ $tw }}][realisasi]"
                                value="{{ $k->realisasi ?? '' }}"
-                               class="form-control text-end form-control-soft">
+                               class="form-control text-end form-control-soft"
+                               @if(!$isKasubagKeu) readonly @endif>
                       </td>
                     </tr>
                   @endforeach
@@ -356,12 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.js-outcome-target-hidden').forEach((el) => {
       el.value = val;
     });
-
-    // Sasaran target (display & hidden)
-    const sasaranDisplay = document.getElementById('sasaran-target-display');
-    const sasaranHidden  = document.getElementById('sasaran-target-hidden');
-    if (sasaranDisplay) sasaranDisplay.value = val;
-    if (sasaranHidden)  sasaranHidden.value  = val;
   };
 
   inputTw1.addEventListener('input', syncTargets);
@@ -371,6 +371,5 @@ document.addEventListener('DOMContentLoaded', () => {
   syncTargets();
 });
 </script>
-
 
 @endsection

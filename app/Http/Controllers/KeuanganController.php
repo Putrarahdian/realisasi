@@ -7,19 +7,21 @@ use App\Models\RealisasiKeuangan;
 
 class KeuanganController extends Controller
 {
-    private function ensureKasubag(): void
+    private function aksesKeuangan(): void
     {
         $u = auth()->user();
+
+        $isSuperuser = $u && $u->role === 'superuser';
         $isKasubag = $u && $u->jabatan && $u->jabatan->jenis_jabatan === 'kasubag_keuangan';
 
-        if (!$isKasubag) {
+        if (!($isKasubag || $isSuperuser)) {
             abort(403, 'Hanya Kasubag Keuangan yang boleh mengakses menu Keuangan.');
         }
     }
 
     public function index(Request $request)
     {
-        $this->ensureKasubag();
+        $this->aksesKeuangan();
 
         $tahun = $request->input('tahun', date('Y'));
 

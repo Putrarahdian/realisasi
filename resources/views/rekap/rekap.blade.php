@@ -195,7 +195,7 @@
                                 <td>{{ Str::limit($row->rekomendasi, 60) }}</td>
                                 <td class="text-center">
                                     {{-- Detail: ke halaman laporan realisasi kegiatan (show) --}}
-                                    <a href="{{ route('realisasi.rekap.anak', $row->id) }}"
+                                    <a href="{{ route('rekap.anak', $row->id) }}"
                                        class="btn btn-sm btn-primary shadow-sm">
                                         Detail
                                     </a>

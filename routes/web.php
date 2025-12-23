@@ -43,16 +43,16 @@ Route::middleware('auth')->group(function () {
     // ============================================================
     Route::prefix('realisasi')->group(function () {
         Route::get('/rekap', [RealisasiController::class, 'rekap'])->name('realisasi.rekap');
-        Route::get('/{id}/pdf', [RealisasiController::class, 'exportPDF'])->name('realisasi.rekap.pdf');
+        Route::get('/{induk}/pdf', [RealisasiController::class, 'exportPDF'])->whereNumber('induk')->name('realisasi.rekap.pdf');
         Route::get('/rekap/excel', [RealisasiController::class, 'exportExcel'])->name('realisasi.rekap.excel');
 
         // rekap anak
         Route::get('/rekap/anak/{induk}', [RealisasiController::class, 'rekapAnak'])
-            ->name('realisasi.rekap.anak');
+            ->name('rekap.anak');
         Route::get('/rekap/anak/{induk}/download', [RealisasiController::class, 'rekapAnakDownload'])
-            ->name('realisasi.rekap.anak.download');
+            ->name('rekap.anak.download');
         Route::post('/rekap/anak/{induk}/disposisi', [RealisasiController::class, 'simpanDisposisi'])
-            ->name('realisasi.rekap.anak.disposisi');
+            ->name('rekap.anak.disposisi');
     });
 
     // ============================================================
