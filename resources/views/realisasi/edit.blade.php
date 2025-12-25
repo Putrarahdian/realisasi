@@ -74,14 +74,11 @@
                                  class="form-control text-end form-control-soft"
                                  @if($isKasubagKeu) readonly @endif>
                         @else
+                          {{-- HANYA TAMPIL: tidak dikirim ke backend supaya tidak membuat / mengubah record TW II–IV --}}
                           <input type="number"
                                  class="form-control text-end form-control-soft js-output-target-display"
                                  value="{{ $targetOutputTw1 }}"
                                  readonly>
-                          <input type="hidden"
-                                 class="js-output-target-hidden"
-                                 name="output[{{ $tw }}][target]"
-                                 value="{{ $targetOutputTw1 }}">
                         @endif
                       </td>
 
@@ -142,14 +139,11 @@
                       </td>
 
                       <td>
+                        {{-- HANYA TAMPIL: tidak dikirim ke backend supaya tidak membuat / mengubah record TW I–IV --}}
                         <input type="number"
                                class="form-control text-end form-control-soft js-outcome-target-display"
                                value="{{ $targetOutcomeTw1 }}"
                                readonly>
-                        <input type="hidden"
-                               class="js-outcome-target-hidden"
-                               name="outcome[{{ $tw }}][target]"
-                               value="{{ $targetOutcomeTw1 }}">
                       </td>
 
                       <td>
@@ -347,19 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const syncTargets = () => {
     const val = inputTw1.value ?? '';
 
-    // Output TW II–IV (display & hidden)
+    // Output TW II–IV (display only)
     document.querySelectorAll('.js-output-target-display').forEach((el) => {
-      el.value = val;
-    });
-    document.querySelectorAll('.js-output-target-hidden').forEach((el) => {
-      el.value = val;
-    });
-
-    // Outcome semua TW (display & hidden)
-    document.querySelectorAll('.js-outcome-target-display').forEach((el) => {
-      el.value = val;
-    });
-    document.querySelectorAll('.js-outcome-target-hidden').forEach((el) => {
       el.value = val;
     });
   };

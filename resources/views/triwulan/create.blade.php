@@ -4,8 +4,12 @@
 @php
   $isKasubagKeuangan = auth()->user()?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
 
-  // target dari DB (kalau seksi sudah isi)
+  // target keuangan dari DB (kalau sudah ada)
   $targetKeuExisting = $keuangan->target ?? null;
+
+  // uraian sasaran: di create dikunci tapi tetap ditampilkan & tetap dikirim ke backend
+  // kalau belum ada sasaran di DB, ambil default dari induk->sasaran_strategis (biar TW1 tetap lolos validasi)
+  $uraianSasaranDefault = old('sasaran.uraian', $sasaran->uraian ?? ($induk->sasaran_strategis ?? ''));
 @endphp
 
 <div class="container py-4">
@@ -48,25 +52,14 @@
             </div>
 
             <div class="col-md-3">
-              <label class="form-label">
-                Target
-                @if($no == 1) <span class="text-danger">*</span> @endif
-              </label>
+              <label class="form-label">Target <span class="text-danger">*</span></label>
 
-              @if($no == 1)
-                <input type="number"
-                       name="output[target]"
-                       class="form-control @error('output.target') is-invalid @enderror"
-                       value="{{ old('output.target') }}"
-                       required>
-              @else
-                <input type="number"
-                       class="form-control"
-                       value="{{ optional($twt['output'])->target }}"
-                       readonly>
-                <input type="hidden" name="output[target]" value="{{ optional($twt['output'])->target }}">
-              @endif
-
+              {{-- ✅ target selalu bisa diinput manual di semua TW --}}
+              <input type="number"
+                     name="output[target]"
+                     class="form-control @error('output.target') is-invalid @enderror"
+                     value="{{ old('output.target') }}"
+                     required>
               @error('output.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
@@ -97,25 +90,14 @@
             </div>
 
             <div class="col-md-3">
-              <label class="form-label">
-                Target
-                @if($no == 1) <span class="text-danger">*</span> @endif
-              </label>
+              <label class="form-label">Target <span class="text-danger">*</span></label>
 
-              @if($no == 1)
-                <input type="number"
-                       name="outcome[target]"
-                       class="form-control @error('outcome.target') is-invalid @enderror"
-                       value="{{ old('outcome.target') }}"
-                       required>
-              @else
-                <input type="number"
-                       class="form-control"
-                       value="{{ optional($twt['outcome'])->target }}"
-                       readonly>
-                <input type="hidden" name="outcome[target]" value="{{ optional($twt['outcome'])->target }}">
-              @endif
-
+              {{-- ✅ target selalu bisa diinput manual di semua TW --}}
+              <input type="number"
+                     name="outcome[target]"
+                     class="form-control @error('outcome.target') is-invalid @enderror"
+                     value="{{ old('outcome.target') }}"
+                     required>
               @error('outcome.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
@@ -139,44 +121,50 @@
             </div>
 
             <div class="card-body">
+              {{-- ✅ Uraian sasaran dikunci di create, tapi tetap tampil dan tetap dikirim --}}
               <div class="mb-3">
                 <label class="form-label">
                   Uraian Sasaran
                   @if($no == 1) <span class="text-danger">*</span> @endif
                 </label>
 
-                <textarea name="sasaran[uraian]"
-                          class="form-control @error('sasaran.uraian') is-invalid @enderror"
-                          rows="2"
-                          @if($no != 1) readonly @else required @endif>{{ old('sasaran.uraian', $sasaran->uraian ?? '') }}</textarea>
-                @error('sasaran.uraian') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <input type="text"
+                       class="form-control @error('sasaran.uraian') is-invalid @enderror"
+                       value="{{ $uraianSasaranDefault }}"
+                       readonly>
+
+                <input type="hidden" name="sasaran[uraian]" value="{{ $uraianSasaranDefault }}">
+
+                @error('sasaran.uraian') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
               </div>
 
               <div class="row">
+                {{-- ✅ Target sasaran bisa diinput tiap triwulan --}}
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">
-                    Target
-                    @if($no == 1) <span class="text-danger">*</span> @endif
-                  </label>
+                  <label class="form-label">Target <span class="text-danger">*</span></label>
                   <input type="number" step="0.01"
                          name="sasaran[target]"
                          class="form-control @error('sasaran.target') is-invalid @enderror"
-                         value="{{ old('sasaran.target', $sasaran->target ?? '') }}"
-                         @if($no != 1) readonly @else required @endif>
+                         value="{{ old('sasaran.target') }}"
+                         required>
                   @error('sasaran.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                  <small class="text-muted d-block mt-1">
+                    Isi target TW ini. Di rekap/show akan menjadi akumulasi total.
+                  </small>
                 </div>
 
+                {{-- ✅ Realisasi sasaran juga bisa diinput tiap triwulan --}}
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">
-                    Realisasi (isi di TW IV)
-                    @if($no == 4) <span class="text-danger">*</span> @endif
-                  </label>
+                  <label class="form-label">Realisasi <span class="text-danger">*</span></label>
                   <input type="number" step="0.01"
                          name="sasaran[realisasi]"
                          class="form-control @error('sasaran.realisasi') is-invalid @enderror"
-                         value="{{ old('sasaran.realisasi', $sasaran->realisasi ?? '') }}"
-                         @if($no != 4) readonly @else required @endif>
+                         value="{{ old('sasaran.realisasi') }}"
+                         required>
                   @error('sasaran.realisasi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                  <small class="text-muted d-block mt-1">
+                    Isi realisasi TW ini. Di rekap/show akan menjadi akumulasi total.
+                  </small>
                 </div>
               </div>
             </div>
@@ -198,7 +186,6 @@
             @if($isKasubagKeuangan)
               <input type="number" class="form-control"
                      value="{{ $targetKeuExisting ?? '' }}" readonly>
-
               <input type="hidden" name="keuangan[target]"
                      value="{{ $targetKeuExisting ?? 0 }}">
             @else
@@ -230,7 +217,7 @@
 
         </div>
 
-        {{-- KEBERHASILAN/HAMBATAN hanya untuk seksi --}}
+        {{-- KEBERHASILAN/HAMBATAN (tanpa textarea, jadi input biasa) --}}
         @if(!$isKasubagKeuangan)
           <div class="card mb-4">
             <div class="card-header bg-light">
@@ -239,18 +226,18 @@
             <div class="card-body">
               <div class="mb-3">
                 <label class="form-label">Keberhasilan (Triwulan {{ $kodeTriwulan }})</label>
-                <textarea name="keberhasilan_triwulan"
-                          id="keberhasilanEditor"
-                          class="form-control"
-                          rows="3">{{ old('keberhasilan_triwulan') }}</textarea>
+                <input type="text"
+                       name="keberhasilan_triwulan"
+                       class="form-control"
+                       value="{{ old('keberhasilan_triwulan') }}">
               </div>
 
               <div class="mb-3">
                 <label class="form-label">Hambatan (Triwulan {{ $kodeTriwulan }})</label>
-                <textarea name="hambatan_triwulan"
-                          id="hambatanEditor"
-                          class="form-control"
-                          rows="3">{{ old('hambatan_triwulan') }}</textarea>
+                <input type="text"
+                       name="hambatan_triwulan"
+                       class="form-control"
+                       value="{{ old('hambatan_triwulan') }}">
               </div>
             </div>
           </div>
@@ -269,17 +256,4 @@
     </div>
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const makeEditor = (selector) => {
-    const el = document.querySelector(selector);
-    if (!el) return;
-    ClassicEditor.create(el).catch(console.error);
-  };
-
-  makeEditor('#keberhasilanEditor');
-  makeEditor('#hambatanEditor');
-});
-</script>
 @endsection

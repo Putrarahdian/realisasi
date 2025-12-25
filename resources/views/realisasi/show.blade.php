@@ -42,14 +42,15 @@
             </thead>
             <tbody>
                 @php
-                // target tahunan diambil dari TW I (kalau ada)
-                $totalTargetO   = 0;
-                $totalRealisasiO  = 0;
-            @endphp
+                    $totalTargetO    = 0;
+                    $totalRealisasiO = 0;
+                @endphp
 
-            @foreach ($urutanTriwulan as $i => $tw)
+                @foreach ($urutanTriwulan as $i => $tw)
                 @php
                     $row = $outputs[$tw][0] ?? null;
+
+                    $totalTargetO    += (float) ($row->target ?? 0);
                     $totalRealisasiO += (float) ($row->realisasi ?? 0);
                 @endphp
                     <tr>
@@ -94,16 +95,18 @@
                 </tr>
             </thead>
             <tbody>
-                @php
-                $totalTargetOc  = 0;
+            @php
+                $totalTargetOc    = 0;
                 $totalRealisasiOc = 0;
             @endphp
 
             @foreach ($urutanTriwulan as $i => $tw)
-                @php
-                    $row = $outcomes[$tw][0] ?? null;
-                    $totalRealisasiOc += (float) ($row->realisasi ?? 0);
-                @endphp
+            @php
+                $row = $outcomes[$tw][0] ?? null;
+
+                $totalTargetOc    += (float) ($row->target ?? 0);
+                $totalRealisasiOc += (float) ($row->realisasi ?? 0);
+            @endphp
                     <tr>
                         <td>{{ $i + 1 }}</td>
                         <td>Triwulan {{ $tw }}</td>
