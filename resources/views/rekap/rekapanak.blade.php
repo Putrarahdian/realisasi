@@ -68,7 +68,6 @@
               $o = optional($outputs[$tw] ?? collect())->first();
 
               if($o){
-                  // Tambahkan semua target dan realisasi tiap triwulan
                   $totalTargetO += (float)($o->target ?? 0);
                   $totalRealisasiO += (float)($o->realisasi ?? 0);
               }
@@ -125,7 +124,6 @@
               $oc = optional($outcomes[$tw] ?? collect())->first();
 
               if($oc){
-                  // Jumlah target dan realisasi tiap triwulan
                   $totalTargetOc += (float)($oc->target ?? 0);
                   $totalRealisasiOc += (float)($oc->realisasi ?? 0);
                 }
@@ -154,6 +152,9 @@
       </table>
     </div>
 
+{{-- ===========================
+    SASARAN (Eselon II) 
+=========================== --}}
 <h6 class="fw-bold mt-4">c. Sasaran <small class="text-muted">(Eselon II)</small></h6>
 <div class="table-responsive mb-4">
   <table class="table table-bordered align-middle">
@@ -168,24 +169,40 @@
     </thead>
 
     <tbody>
-      @php $no = 1; @endphp
-      @if($sasaran)
+      @php
+        $no = 1;
+
+        // ✅ pastikan sasaran bukan collection
+        $sas = $sasaran instanceof \Illuminate\Support\Collection ? $sasaran->first() : $sasaran;
+
+        $sasaranTarget   = (float) ($sas->target ?? 0);
+        $sasaranRealisasi= (float) ($sas->realisasi ?? 0);
+        $sasaranCapaian  = $sasaranTarget > 0
+            ? round(($sasaranRealisasi / $sasaranTarget) * 100, 2)
+            : null;
+      @endphp
+
+      @if($sas)
         <tr>
           <td class="text-center">{{ $no++ }}</td>
-          <td>{{ $sasaran->uraian }}</td>
-          <td class="text-center">{{ $sasaran->target }}</td>
-          <td class="text-center">{{ $sasaran->realisasi }}</td>
+          <td>{{ $sas->uraian ?? '-' }}</td>
+          <td class="text-center">{{ $sasaranTarget > 0 ? $sasaranTarget : '-' }}</td>
+          <td class="text-center">{{ $sasaranRealisasi > 0 ? $sasaranRealisasi : '-' }}</td>
           <td class="text-center">
-            {{ $sasaran->capaian !== null ? number_format($sasaran->capaian, 0) . '%' : '-' }}
+            @if(!is_null($sasaranCapaian))
+              {{ rtrim(rtrim(number_format($sasaranCapaian, 2, ',', '.'), '0'), ',') }}%
+            @else
+              -
+            @endif
           </td>
         </tr>
-        @else
+      @else
         <tr>
-            <td colspan="5" class="text-center text-muted">
-                Belum ada data sasaran.
-            </td>
+          <td colspan="5" class="text-center text-muted">
+            Belum ada data sasaran.
+          </td>
         </tr>
-        @endif
+      @endif
     </tbody>
 
   </table>

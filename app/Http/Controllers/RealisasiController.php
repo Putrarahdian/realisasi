@@ -324,7 +324,9 @@ class RealisasiController extends Controller
 
         $twt = null;
         if ((int)$no > 1) {
-            $tws = self::TRIWULAN[0];
+            $prevIndex = (int)$no - 2;                 
+            $tws = self::TRIWULAN[$prevIndex] ?? 'I';
+
             $twt = [
                 'output' => RealisasiOutput::where('induk_id', $indukId)
                     -> where ('triwulan', $tws)
@@ -412,18 +414,12 @@ class RealisasiController extends Controller
             'sasaran.realisasi' => 'required|numeric|min:0',
         ];
 
-        // TW1: uraian sasaran wajib diisi
         if ((int)$no === 1) {
             $rules['sasaran.uraian'] = 'required|string';
-        }
-
-        // TW2-4: wajib sudah ada uraian sasaran dari TW1
-        if ((int)$no > 1) {
+        } else {
             $sasaranRowCheck = RealisasiSasaran::where('induk_id', $induk->id)->first();
-            if (!$sasaranRowCheck || empty(trim($sasaranRowCheck->uraian ?? ''))) {
-                return redirect()
-                    ->back()
-                    ->withInput()
+            if (!$sasaranRowCheck || trim((string)($sasaranRowCheck->uraian ?? '')) === '') {
+                return redirect()->back()->withInput()
                     ->with('error', 'Uraian Sasaran harus diisi pada Triwulan I terlebih dahulu.');
             }
         }
@@ -499,30 +495,13 @@ class RealisasiController extends Controller
         }
 
         // simpan nilai per triwulan
-        $targetTw    = (float)($s['target'] ?? 0);
-        $realisasiTw = (float)($s['realisasi'] ?? 0);
-
-        $sasaran->{"target_tw{$no}"}    = $targetTw;
-        $sasaran->{"realisasi_tw{$no}"} = $realisasiTw;
-
-        // HITUNG TOTAL (SUM TW1–TW4)
-        $totalTarget =
-            ($sasaran->target_tw1 ?? 0) +
-            ($sasaran->target_tw2 ?? 0) +
-            ($sasaran->target_tw3 ?? 0) +
-            ($sasaran->target_tw4 ?? 0);
-
-        $totalRealisasi =
-            ($sasaran->realisasi_tw1 ?? 0) +
-            ($sasaran->realisasi_tw2 ?? 0) +
-            ($sasaran->realisasi_tw3 ?? 0) +
-            ($sasaran->realisasi_tw4 ?? 0);
-
-        // simpan TOTAL SAJA
-        $sasaran->target    = $totalTarget;
-        $sasaran->realisasi = $totalRealisasi;
-        $sasaran->user_id   = auth()->id();
+        $sasaran->{"target_tw{$no}"}    = (float)($s['target'] ?? 0);
+        $sasaran->{"realisasi_tw{$no}"} = (float)($s['realisasi'] ?? 0);
+        $sasaran->user_id = auth()->id();
         $sasaran->save();
+
+        // hitung ulang TOTAL otomatis
+        $this->recalcSasaranTotal($indukId);
 
         // ===================== KEUANGAN =====================
         $k = $request->input('keuangan', []);
@@ -907,27 +886,52 @@ class RealisasiController extends Controller
             }
         }
 
-        // hitung ulang capaian keuangan setelah target berubah
         $this->hitungUlangCapaianKeuangan($indukId);
 
-        // ===================== SASARAN (EDIT TOTAL SAJA) =====================
-        $s = $request->input('sasaran', []);
+        // ===================== SASARAN =====================
+        $s = $request->input('sasaran');
         if (is_array($s)) {
+
+            $request->validate([
+                'sasaran.uraian'        => 'nullable|string',
+                'sasaran.target_tw1'    => 'nullable|numeric|min:0',
+                'sasaran.target_tw2'    => 'nullable|numeric|min:0',
+                'sasaran.target_tw3'    => 'nullable|numeric|min:0',
+                'sasaran.target_tw4'    => 'nullable|numeric|min:0',
+                'sasaran.realisasi_tw1' => 'nullable|numeric|min:0',
+                'sasaran.realisasi_tw2' => 'nullable|numeric|min:0',
+                'sasaran.realisasi_tw3' => 'nullable|numeric|min:0',
+                'sasaran.realisasi_tw4' => 'nullable|numeric|min:0',
+            ]);
 
             $sasaran = RealisasiSasaran::firstOrCreate(
                 ['induk_id' => $indukId],
-                ['user_id' => auth()->id()]
+                ['user_id' => auth()->id(), 'uraian' => null]
             );
 
-            if (!empty(trim($s['uraian'] ?? ''))) {
-                $sasaran->uraian = $s['uraian'];
+            if (array_key_exists('uraian', $s)) {
+                $val = trim((string) ($s['uraian'] ?? ''));
+                if ($val !== '') {
+                    $sasaran->uraian = $val;
+                }
             }
 
-            // TOTAL MANUAL
-            $sasaran->target    = (float)($s['target'] ?? 0);
-            $sasaran->realisasi = (float)($s['realisasi'] ?? 0);
-            $sasaran->user_id   = auth()->id();
+            foreach (['1','2','3','4'] as $n) {
+                $tk = "target_tw{$n}";
+                $rk = "realisasi_tw{$n}";
+
+                if (array_key_exists($tk, $s)) {
+                    $sasaran->{$tk} = (float) ($s[$tk] ?? 0);
+                }
+                if (array_key_exists($rk, $s)) {
+                    $sasaran->{$rk} = (float) ($s[$rk] ?? 0);
+                }
+            }
+
+            $sasaran->user_id = auth()->id();
             $sasaran->save();
+
+            $this->recalcSasaranTotal($indukId);
         }
 
         // ===================== KEBERHASILAN =====================
@@ -996,10 +1000,7 @@ class RealisasiController extends Controller
             'induk.strategi'          => 'required|string',
             'induk.alasan'            => 'required|string',
         ]);
-
-        $data  = $validated['induk'];
-
-        $induk->update($data);
+        $induk->update($validated['induk']);
 
         return redirect()->route('realisasi.index')->with('success', 'Data Berhasil Diperbaharui');
     }
@@ -1007,7 +1008,6 @@ class RealisasiController extends Controller
     public function destroyInduk($id)
     {
         $this->forbidAdminOnKegiatan();
-        // Hapus induk + anak, tapi izin spesifik tetap dikontrol via route (misal middleware superuser)
         $induk = RealisasiInduk::findOrFail($id);
 
         $this->authorizeBidang($induk);
@@ -1154,20 +1154,11 @@ class RealisasiController extends Controller
             'riwayat2Tahun'
         ));
     }
-    /**
- * Rekap hasil sasaran 2 tahun sebelumnya untuk 1 induk.
- * Dihitung per bidang + seksi + program + indikator yang sama.
- *
- * return [
- *   2023 => ['target' => ..., 'realisasi' => ..., 'capaian' => ...],
- *   2024 => [...],
- * ]
- */
+
     private function getRiwayat2Tahun(RealisasiInduk $induk): array
     {
         $hasil = [];
 
-        // pastikan tahun berupa integer
         $tahunSekarang = (int) $induk->tahun;
         $tahunList = [
             $tahunSekarang - 2,
@@ -1176,7 +1167,6 @@ class RealisasiController extends Controller
 
         foreach ($tahunList as $th) {
             if ($th <= 0) {
-                // kalau aneh (tahun < 0), skip aja
                 continue;
             }
 
@@ -1221,11 +1211,38 @@ class RealisasiController extends Controller
         return $hasil;
     }
 
+    private function recalcSasaranTotal(int $indukId): void
+    {
+        $row = RealisasiSasaran::where('induk_id', $indukId)->first();
+        if (!$row) return;
 
+        $t1 = (float) ($row->target_tw1 ?? 0);
+        $t2 = (float) ($row->target_tw2 ?? 0);
+        $t3 = (float) ($row->target_tw3 ?? 0);
+        $t4 = (float) ($row->target_tw4 ?? 0);
+
+        $r1 = (float) ($row->realisasi_tw1 ?? 0);
+        $r2 = (float) ($row->realisasi_tw2 ?? 0);
+        $r3 = (float) ($row->realisasi_tw3 ?? 0);
+        $r4 = (float) ($row->realisasi_tw4 ?? 0);
+
+        $totalTarget    = $t1 + $t2 + $t3 + $t4;
+        $totalRealisasi = $r1 + $r2 + $r3 + $r4;
+
+        $capaian = $totalTarget > 0
+            ? round(($totalRealisasi / $totalTarget) * 100, 2)
+            : 0;
+
+        // ✅ set manual biar tidak ke-block fillable
+        $row->target    = $totalTarget;
+        $row->realisasi = $totalRealisasi;
+        $row->capaian   = $capaian;
+
+        $row->save();
+    }
 
     public function exportPDF(RealisasiInduk $induk)
     {
-
         $induk->load([
             'bidang',
             'seksi',

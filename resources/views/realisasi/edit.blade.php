@@ -158,40 +158,53 @@
                 <thead>
                   <tr>
                     <th style="width:60px;">No</th>
+                    <th style="width:120px;">Triwulan</th>
                     <th>Uraian / Indikator</th>
                     <th style="width:130px;">Target</th>
                     <th style="width:130px;">Realisasi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td class="text-center fw-semibold">1</td>
+                  @foreach([1=>'I',2=>'II',3=>'III',4=>'IV'] as $n => $tw)
+                    @php
+                      $tk = "target_tw{$n}";
+                      $rk = "realisasi_tw{$n}";
+                    @endphp
+                    <tr>
+                      <td class="text-center fw-semibold">{{ $n }}</td>
+                      <td class="text-center">Triwulan {{ $tw }}</td>
 
-                    <td>
-                      <input type="text"
-                             name="sasaran[uraian]"
-                             value="{{ old('sasaran.uraian', optional($sasaran)->uraian) }}"
-                             class="form-control form-control-soft"
-                             @if($isKasubagKeu) readonly @endif>
-                    </td>
+                      {{-- uraian cukup 1x (rowspan 4) supaya tetap sesuai konsep "uraian satu untuk semua TW" --}}
+                      @if($n === 1)
+                        <td rowspan="4" class="align-top">
+                          <input type="text"
+                                 name="sasaran[uraian]"
+                                 value="{{ old('sasaran.uraian', optional($sasaran)->uraian) }}"
+                                 class="form-control form-control-soft"
+                                 @if($isKasubagKeu) readonly @endif>
+                          <small class="text-muted d-block mt-2">
+                            Uraian sasaran satu (dipakai untuk semua triwulan).
+                          </small>
+                        </td>
+                      @endif
 
-                    <td>
-                      <input type="number"
-                            name="sasaran[target]"
-                            value="{{ old('sasaran.target', optional($sasaran)->target) }}"
-                            class="form-control text-end form-control-soft"
-                            @if($isKasubagKeu) readonly @endif>
-                    </td>
+                      <td>
+                        <input type="number"
+                               name="sasaran[{{ $tk }}]"
+                               value="{{ old("sasaran.$tk", optional($sasaran)->{$tk}) }}"
+                               class="form-control text-end form-control-soft"
+                               @if($isKasubagKeu) readonly @endif>
+                      </td>
 
-                    <td>
-                      <input type="number"
-                             name="sasaran[realisasi]"
-                             value="{{ old('sasaran.realisasi', optional($sasaran)->realisasi) }}"
-                             class="form-control text-end form-control-soft"
-                             @if($isKasubagKeu) readonly @endif>
-                    </td>
-
-                  </tr>
+                      <td>
+                        <input type="number"
+                               name="sasaran[{{ $rk }}]"
+                               value="{{ old("sasaran.$rk", optional($sasaran)->{$rk}) }}"
+                               class="form-control text-end form-control-soft"
+                               @if($isKasubagKeu) readonly @endif>
+                      </td>
+                    </tr>
+                  @endforeach
                 </tbody>
               </table>
             </div>

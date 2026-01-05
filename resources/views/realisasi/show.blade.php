@@ -10,10 +10,43 @@
     $outcomes  = $induk->outcomes?->groupBy('triwulan')  ?? collect();
     $keuangans = $induk->keuangans?->groupBy('triwulan') ?? collect();
 
-    // relasi hasOne di model RealisasiInduk
-    $sasaran      = $induk->sasaran ?? null;
+    // ✅ sasaran bisa hasOne / bisa collection (biar aman)
+    $sasaran = $induk->sasaran instanceof \Illuminate\Support\Collection
+        ? $induk->sasaran->first()
+        : $induk->sasaran;
+
     $keberhasilan = $induk->keberhasilan ?? null;
 
+    /**
+     * ✅ LOGIKA FIX: hitung total sasaran & capaian total DI VIEW
+     * - Prioritas: pakai kolom total (target, realisasi) kalau sudah terisi
+     * - Kalau belum terisi / masih 0, fallback ke penjumlahan target_tw1..4 & realisasi_tw1..4
+     */
+    $sasaranTargetTotal = 0;
+    $sasaranRealisasiTotal = 0;
+
+    if ($sasaran) {
+        $sasaranTargetTotal   = (float) ($sasaran->target ?? 0);
+        $sasaranRealisasiTotal = (float) ($sasaran->realisasi ?? 0);
+
+        $sumT = (float)($sasaran->target_tw1 ?? 0)
+              + (float)($sasaran->target_tw2 ?? 0)
+              + (float)($sasaran->target_tw3 ?? 0)
+              + (float)($sasaran->target_tw4 ?? 0);
+
+        $sumR = (float)($sasaran->realisasi_tw1 ?? 0)
+              + (float)($sasaran->realisasi_tw2 ?? 0)
+              + (float)($sasaran->realisasi_tw3 ?? 0)
+              + (float)($sasaran->realisasi_tw4 ?? 0);
+
+        // fallback kalau total di DB belum keisi / masih 0 padahal ada TW
+        if ($sasaranTargetTotal <= 0 && $sumT > 0) $sasaranTargetTotal = $sumT;
+        if ($sasaranRealisasiTotal <= 0 && $sumR > 0) $sasaranRealisasiTotal = $sumR;
+    }
+
+    $sasaranCapaianTotal = ($sasaranTargetTotal > 0)
+        ? round(($sasaranRealisasiTotal / $sasaranTargetTotal) * 100, 2)
+        : 0;
 @endphp
 
 <div class="container mt-5 laporan-container">
@@ -63,14 +96,13 @@
                     </tr>
                 @endforeach
 
-                {{-- Baris TOTAL OUTPUT --}}
                 <tr class="fw-bold table-light">
                     <td colspan="3" class="text-center">Jumlah</td>
                     <td>{{ $totalTargetO ?: '-' }}</td>
                     <td>{{ $totalRealisasiO ?: '-' }}</td>
                     <td>
                         @if($totalTargetO > 0)
-                            {{ round($totalRealisasiO / $totalTargetO* 100, 2) }}%
+                            {{ round($totalRealisasiO / $totalTargetO * 100, 2) }}%
                         @else
                             -
                         @endif
@@ -115,9 +147,8 @@
                         <td>{{ $row?->realisasi ?? '-' }}</td>
                         <td>{{ is_numeric($row?->capaian) ? $row->capaian . '%' : '-' }}</td>
                     </tr>
-                @endforeach
+            @endforeach
 
-                {{-- Baris TOTAL OUTCOME --}}
                 <tr class="fw-bold table-light">
                     <td colspan="3" class="text-center">Jumlah</td>
                     <td>{{ $totalTargetOc ?: '-' }}</td>
@@ -134,7 +165,7 @@
         </table>
     </div>
 
-    {{-- ============ TABEL SASARAN ============ --}}
+    {{-- ============ TABEL SASARAN (TOTAL) ============ --}}
     <h5 class="fw-bold mt-5">c. Sasaran (Eselon II)</h5>
     <div class="table-responsive">
         <table class="table table-bordered text-center align-middle">
@@ -142,19 +173,19 @@
                 <tr>
                     <th>No</th>
                     <th>Uraian Indikator</th>
-                    <th>Target</th>
-                    <th>Realisasi</th>
-                    <th>Capaian</th>
+                    <th>Target (Total)</th>
+                    <th>Realisasi (Total)</th>
+                    <th>Capaian (Total)</th>
                 </tr>
             </thead>
             <tbody>
                 @if($sasaran)
                     <tr>
                         <td>1</td>
-                        <td class="text-start">{{ $sasaran->uraian }}</td>
-                        <td>{{ $sasaran->target ?? '-' }}</td>
-                        <td>{{ $sasaran->realisasi ?? '-' }}</td>
-                        <td>{{ $sasaran->capaian !== null ? $sasaran->capaian . '%' : '-' }}</td>
+                        <td class="text-start">{{ $sasaran->uraian ?? '-' }}</td>
+                        <td>{{ $sasaranTargetTotal > 0 ? $sasaranTargetTotal : '-' }}</td>
+                        <td>{{ $sasaranRealisasiTotal > 0 ? $sasaranRealisasiTotal : '-' }}</td>
+                        <td>{{ $sasaranTargetTotal > 0 ? ($sasaranCapaianTotal . '%') : '-' }}</td>
                     </tr>
                 @else
                     <tr>
@@ -164,6 +195,40 @@
             </tbody>
         </table>
     </div>
+
+    {{-- ✅ RINCIAN SASARAN PER TRIWULAN --}}
+    @if($sasaran)
+    <div class="table-responsive mt-2">
+        <table class="table table-bordered text-center align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:60px;">No</th>
+                    <th style="width:140px;">Triwulan</th>
+                    <th>Target</th>
+                    <th>Realisasi</th>
+                    <th>Capaian</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach([1,2,3,4] as $i)
+                    @php
+                        $t = (float)($sasaran->{"target_tw{$i}"} ?? 0);
+                        $r = (float)($sasaran->{"realisasi_tw{$i}"} ?? 0);
+                        $cap = $t > 0 ? round(($r / $t) * 100, 2) : 0;
+                        $label = $urutanTriwulan[$i-1];
+                    @endphp
+                    <tr>
+                        <td>{{ $i }}</td>
+                        <td>Triwulan {{ $label }}</td>
+                        <td>{{ $t > 0 ? $t : '-' }}</td>
+                        <td>{{ $r > 0 ? $r : '-' }}</td>
+                        <td>{{ $t > 0 ? ($cap . '%') : '-' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
 
     {{-- ============ TABEL PELAKSANAAN KEUANGAN ============ --}}
     <h5 class="fw-bold mt-5">d. Pelaksanaan Keuangan</h5>
@@ -202,7 +267,6 @@
                     </tr>
                 @endforeach
 
-                {{-- Baris TOTAL KEUANGAN --}}
                 <tr class="fw-bold table-light">
                     <td colspan="2" class="text-center">Jumlah</td>
                     <td>{{ $totalTargetK ?: '-' }}</td>
@@ -235,17 +299,11 @@
                 $hVal = $keberhasilan->$hField ?? '';
 
                 if (trim($kVal) !== '') {
-                    $gabungKeb[] = [
-                        'label' => 'TW ' . $twNo,
-                        'text'  => $kVal,
-                    ];
+                    $gabungKeb[] = ['label' => 'TW ' . $twNo, 'text' => $kVal];
                 }
 
                 if (trim($hVal) !== '') {
-                    $gabungHam[] = [
-                        'label' => 'TW ' . $twNo,
-                        'text'  => $hVal,
-                    ];
+                    $gabungHam[] = ['label' => 'TW ' . $twNo, 'text' => $hVal];
                 }
             }
         }
@@ -288,7 +346,6 @@
     @else
         <p>- Belum ada data keberhasilan atau hambatan</p>
     @endif
-
 
     {{-- ============ TABEL 7: 2 TAHUN SEBELUMNYA ============ --}}
     <h5 class="fw-bold mt-5">7. Hasil Pelaksanaan Kegiatan 2 Tahun Sebelumnya</h5>
