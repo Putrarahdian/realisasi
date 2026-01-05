@@ -59,6 +59,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     {{-- Tombol Tambah (hanya superuser) --}}
     @if(auth()->user()->role === 'superuser')
+    <a href="{{ route('admin.users.export.excel', ['search' => $search ?? '']) }}" class="btn btn-success fw-semibold shadow-sm">
+      <i class="bi bi-file-earmark-excel-fill me-1"></i> Download Excel
+    </a>
+
       <a href="{{ route('user.create') }}" class="btn btn-success fw-semibold shadow-sm">
         <i class="bi bi-person-plus-fill me-1"></i> Tambahkan Pengguna Baru
       </a>

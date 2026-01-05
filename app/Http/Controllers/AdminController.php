@@ -9,6 +9,9 @@ use App\Models\Jabatan;
 use App\Models\Seksi;
 use App\Models\Bidang;
 use Illuminate\Validation\Rules\Password;
+use App\Exports\UsersExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class AdminController extends Controller
 {
@@ -25,6 +28,19 @@ class AdminController extends Controller
         }
     }
     
+    public function exportUsersExcel(Request $request)
+    {
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'superuser'])) {
+            abort(403);
+        }
+
+        $search = $request->input('search');
+
+        $filename = 'users_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new UsersExport(auth()->user(), $search), $filename);
+    }
+
 
     // 📋 Tampilkan semua user
     public function index(Request $request)
@@ -84,6 +100,7 @@ class AdminController extends Controller
     // 🧩 Form tambah user
     public function create()
     {
+        $this->onlySuperuser();
         $user = auth()->user();
         $jabatans = Jabatan::orderBy('nama')->get();
 
@@ -101,29 +118,32 @@ class AdminController extends Controller
     // ➕ Tambah user baru
     public function store(Request $request)
     {
-    $messages = [
-    'password.min' => 'Password minimal 6 karakter.',
-    'password.mixed' => 'Password harus mengandung huruf besar dan kecil.',
-    'password.letters' => 'Password harus mengandung minimal satu huruf.',
-    'password.numbers' => 'Password harus mengandung angka.',
-    'password.symbols' => 'Password harus mengandung simbol.',
-    ];
+        $this->onlySuperuser();
+        $messages = [
+            'password.min'    => 'Password minimal 6 karakter.',
+            'password.mixed'  => 'Password harus mengandung huruf besar dan kecil.',
+            'password.letters'=> 'Password harus mengandung minimal satu huruf.',
+            'password.numbers'=> 'Password harus mengandung angka.',
+            'password.symbols'=> 'Password harus mengandung simbol.',
+        ];
 
-    $request->merge([
-      'bidang_id' => $request->input('bidang_id') ?: null,
-      'seksi_id'  => $request->input('seksi_id') ?: null,
-    ]);
+        // normalisasi kosong => null (biar validasi & save rapi)
+        $request->merge([
+            'bidang_id'  => $request->input('bidang_id') ?: null,
+            'seksi_id'   => $request->input('seksi_id') ?: null,
+            'jabatan_id' => $request->input('jabatan_id') ?: null,
+        ]);
 
-        // 🧱 Validasi umum
+        // ✅ Validasi dasar
         $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|max:255|unique:users,email',
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|email|max:255|unique:users,email',
             'password' => ['required', Password::defaults()],
-            'role' => 'required|in:user,admin,superuser',
-            'nip' => 'required|string|max:20|unique:users,nip',
+            'role'     => 'required|in:user,admin,superuser',
+            'nip'      => 'required|string|max:20|unique:users,nip',
+
+            // default: jabatan wajib (admin utama bukan lewat store biasanya, tapi tetap aman)
             'jabatan_id' => 'required|exists:jabatans,id',
-            'bidang_id' => 'nullable|exists:bidangs,id',
-            'seksi_id' => 'nullable|exists:seksis,id',
         ], $messages);
 
         // Admin hanya bisa menambah user dalam bidangnya
@@ -131,17 +151,36 @@ class AdminController extends Controller
             $request->merge(['bidang_id' => auth()->user()->bidang_id]);
         }
 
-        $jabatan = Jabatan::find($request->jabatan_id)?->nama;
+        $jabatanModel = Jabatan::find($request->jabatan_id);
+        $jabatanNama  = $jabatanModel?->nama;
+        $jenis        = $jabatanModel?->jenis_jabatan;
 
-        $jenis = Jabatan::find($request->jabatan_id)?->jenis_jabatan;
-
-        if ($jenis === 'kasubag_keuangan') {
+        // ====== ATURAN BIDANG/SEKSI ======
+        // Kadis/Sekretaris: tidak pakai bidang/seksi
+        if (in_array($jabatanNama, ['Kepala Dinas', 'Sekretaris'])) {
             $request->merge(['bidang_id' => null, 'seksi_id' => null]);
         }
+        // Kasubag Keuangan: tidak pakai bidang/seksi
+        elseif ($jenis === 'kasubag_keuangan') {
+            $request->merge(['bidang_id' => null, 'seksi_id' => null]);
+        }
+        // Kepala Bidang: wajib bidang, seksi null
+        elseif ($jabatanNama === 'Kepala Bidang') {
+            if (!$request->bidang_id) {
+                return back()->with('error', 'Kepala Bidang harus memilih bidang.');
+            }
+            $request->merge(['seksi_id' => null]);
+        }
+        // Selain itu: wajib bidang & seksi
+        else {
+            if (!$request->bidang_id || !$request->seksi_id) {
+                return back()->with('error', 'Bidang dan seksi wajib diisi untuk jabatan ini.');
+            }
+        }
 
-
-        // 🔒 Kepala Dinas (maks 1 orang)
-        if ($jabatan === 'Kepala Dinas') {
+        // ====== BATASAN UNIK JABATAN (punyamu) ======
+        // Kepala Dinas (maks 1 orang)
+        if ($jabatanNama === 'Kepala Dinas') {
             $existing = User::whereHas('jabatan', fn($q) => $q->where('nama', 'Kepala Dinas'))->count();
             if ($existing >= 1) {
                 return back()->with('error', 'Hanya boleh ada 1 Kepala Dinas.');
@@ -149,8 +188,8 @@ class AdminController extends Controller
             $request->merge(['bidang_id' => null, 'seksi_id' => null]);
         }
 
-        // 🔒 Sekretaris (maks 1 orang)
-        elseif ($jabatan === 'Sekretaris') {
+        // Sekretaris (maks 1 orang)
+        elseif ($jabatanNama === 'Sekretaris') {
             $existing = User::whereHas('jabatan', fn($q) => $q->where('nama', 'Sekretaris'))->count();
             if ($existing >= 1) {
                 return back()->with('error', 'Hanya boleh ada 1 Sekretaris.');
@@ -158,12 +197,8 @@ class AdminController extends Controller
             $request->merge(['bidang_id' => null, 'seksi_id' => null]);
         }
 
-        // 🔒 Kepala Bidang (maks 1 per bidang)
-        elseif ($jabatan === 'Kepala Bidang') {
-            if (!$request->bidang_id) {
-                return back()->with('error', 'Kepala Bidang harus memilih bidang.');
-            }
-
+        // Kepala Bidang (maks 1 per bidang)
+        elseif ($jabatanNama === 'Kepala Bidang') {
             $cekBidang = User::where('bidang_id', $request->bidang_id)
                 ->whereHas('jabatan', fn($q) => $q->where('nama', 'Kepala Bidang'))
                 ->count();
@@ -173,8 +208,8 @@ class AdminController extends Controller
             }
         }
 
-        // 🔒 Kepala Seksi (wajib pilih bidang & seksi)
-        elseif ($jabatan === 'Kepala Seksi') {
+        // Kepala Seksi (wajib bidang & seksi)
+        elseif ($jabatanNama === 'Kepala Seksi') {
             if (!$request->bidang_id || !$request->seksi_id) {
                 return back()->with('error', 'Kepala Seksi harus memilih bidang dan seksi.');
             }
@@ -182,15 +217,15 @@ class AdminController extends Controller
 
         // ✅ Simpan user baru
         User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'nip' => $request->nip,
-            'jabatan_id' => $request->jabatan_id,
+            'name'      => $request->name,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'role'      => $request->role,
+            'nip'       => $request->nip,
+            'jabatan_id'=> $request->jabatan_id,
             'bidang_id' => $request->bidang_id,
-            'seksi_id' => $request->seksi_id,
-            'is_locked' => in_array($jabatan, ['Kepala Dinas', 'Sekretaris', 'Kepala Bidang']) ? 1 : 0,
+            'seksi_id'  => $request->seksi_id,
+            'is_locked' => in_array($jabatanNama, ['Kepala Dinas', 'Sekretaris', 'Kepala Bidang']) ? 1 : 0,
         ]);
 
         return redirect()->route('admin.menu')->with('success', 'Data pengguna berhasil ditambahkan!');
@@ -214,89 +249,110 @@ class AdminController extends Controller
         return view('admin.edit', compact('user', 'jabatans', 'bidangs', 'seksis'));
     }
 
-    // 🔄 Update data user
     public function update(Request $request, User $user)
     {
         $this->onlySuperuser();
-    $messages = [
-    'password.min' => 'Password minimal 6 karakter.',
-    'password.mixed' => 'Password harus mengandung huruf besar dan kecil.',
-    'password.letters' => 'Password harus mengandung minimal satu huruf.',
-    'password.numbers' => 'Password harus mengandung angka.',
-    'password.symbols' => 'Password harus mengandung simbol.',
-    ];
 
-    $request->merge([
-      'bidang_id' => $request->input('bidang_id') ?: null,
-      'seksi_id'  => $request->input('seksi_id') ?: null,
-    ]);
+        $messages = [
+            'password.min'    => 'Password minimal 6 karakter.',
+            'password.mixed'  => 'Password harus mengandung huruf besar dan kecil.',
+            'password.letters'=> 'Password harus mengandung minimal satu huruf.',
+            'password.numbers'=> 'Password harus mengandung angka.',
+            'password.symbols'=> 'Password harus mengandung simbol.',
+        ];
 
+        // normalisasi kosong => null
+        $request->merge([
+            'jabatan_id' => $request->input('jabatan_id') ?: null,
+            'bidang_id'  => $request->input('bidang_id') ?: null,
+            'seksi_id'   => $request->input('seksi_id') ?: null,
+        ]);
 
+        $current   = auth()->user();
+        $isMaster  = ($user->id === 1 && $user->role === 'superuser');
+
+        // ✅ Validasi dasar
         $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'role' => 'required|in:user,admin,superuser',
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|email|max:255|unique:users,email,' . $user->id,
+            'role'     => 'required|in:user,admin,superuser',
             'password' => ['nullable', Password::defaults()],
-            'nip' => 'required|string|max:20|unique:users,nip,' . $user->id,
-            'jabatan_id' => 'required|exists:jabatans,id',
-            'bidang_id' => 'nullable|exists:bidangs,id',
-            'seksi_id' => 'nullable|exists:seksis,id',
+            'nip'      => 'required|string|max:20|unique:users,nip,' . $user->id,
+
+            // ✅ master superuser boleh NULL jabatan
+            'jabatan_id' => $isMaster ? 'nullable' : 'required|exists:jabatans,id',
         ], $messages);
-        
-        $current = auth()->user();
-        $jabatan = Jabatan::find($request->jabatan_id)?->nama;
 
-        $jenis = Jabatan::find($request->jabatan_id)?->jenis_jabatan;
+        // ✅ ADMIN UTAMA: tidak pakai jabatan/bidang/seksi
+        if ($isMaster) {
+            $request->merge([
+                'jabatan_id' => null,
+                'bidang_id'  => null,
+                'seksi_id'   => null,
+            ]);
+        } else {
+            $jabatanModel = Jabatan::find($request->jabatan_id);
+            $jabatanNama  = $jabatanModel?->nama;
+            $jenis        = $jabatanModel?->jenis_jabatan;
 
-        if ($jenis === 'kasubag_keuangan') {
-            $request->merge(['bidang_id' => null, 'seksi_id' => null]);
-        }
-
-
-        // 🔒 Validasi per jabatan (sama seperti store)
-        if ($jabatan === 'Kepala Dinas') {
-            $existing = User::whereHas('jabatan', fn($q) => $q->where('nama', 'Kepala Dinas'))
-                ->where('id', '!=', $user->id)
-                ->count();
-            if ($existing >= 1) {
-                return back()->with('error', 'Hanya boleh ada 1 Kepala Dinas.');
+            // ====== ATURAN BIDANG/SEKSI ======
+            if (in_array($jabatanNama, ['Kepala Dinas', 'Sekretaris'])) {
+                $request->merge(['bidang_id' => null, 'seksi_id' => null]);
             }
-            $request->merge(['bidang_id' => null, 'seksi_id' => null]);
-        }
-
-        elseif ($jabatan === 'Sekretaris') {
-            $existing = User::whereHas('jabatan', fn($q) => $q->where('nama', 'Sekretaris'))
-                ->where('id', '!=', $user->id)
-                ->count();
-            if ($existing >= 1) {
-                return back()->with('error', 'Hanya boleh ada 1 Sekretaris.');
+            elseif ($jenis === 'kasubag_keuangan') {
+                $request->merge(['bidang_id' => null, 'seksi_id' => null]);
             }
-            $request->merge(['bidang_id' => null, 'seksi_id' => null]);
-        }
-
-        elseif ($jabatan === 'Kepala Bidang') {
-            if (!$request->bidang_id) {
-                return back()->with('error', 'Kepala Bidang harus memilih bidang.');
+            elseif ($jabatanNama === 'Kepala Bidang') {
+                if (!$request->bidang_id) {
+                    return back()->with('error', 'Kepala Bidang harus memilih bidang.');
+                }
+                $request->merge(['seksi_id' => null]);
+            }
+            else {
+                if (!$request->bidang_id || !$request->seksi_id) {
+                    return back()->with('error', 'Bidang dan seksi wajib diisi untuk jabatan ini.');
+                }
             }
 
-            $cekBidang = User::where('bidang_id', $request->bidang_id)
-                ->whereHas('jabatan', fn($q) => $q->where('nama', 'Kepala Bidang'))
-                ->where('id', '!=', $user->id)
-                ->count();
-
-            if ($cekBidang > 0) {
-                return back()->with('error', 'Setiap bidang hanya boleh memiliki satu Kepala Bidang.');
+            // ====== BATASAN UNIK JABATAN (seperti punyamu) ======
+            if ($jabatanNama === 'Kepala Dinas') {
+                $existing = User::whereHas('jabatan', fn($q) => $q->where('nama', 'Kepala Dinas'))
+                    ->where('id', '!=', $user->id)
+                    ->count();
+                if ($existing >= 1) {
+                    return back()->with('error', 'Hanya boleh ada 1 Kepala Dinas.');
+                }
+                $request->merge(['bidang_id' => null, 'seksi_id' => null]);
             }
-            $request->merge(['seksi_id' => null]);
+            elseif ($jabatanNama === 'Sekretaris') {
+                $existing = User::whereHas('jabatan', fn($q) => $q->where('nama', 'Sekretaris'))
+                    ->where('id', '!=', $user->id)
+                    ->count();
+                if ($existing >= 1) {
+                    return back()->with('error', 'Hanya boleh ada 1 Sekretaris.');
+                }
+                $request->merge(['bidang_id' => null, 'seksi_id' => null]);
+            }
+            elseif ($jabatanNama === 'Kepala Bidang') {
+                $cekBidang = User::where('bidang_id', $request->bidang_id)
+                    ->whereHas('jabatan', fn($q) => $q->where('nama', 'Kepala Bidang'))
+                    ->where('id', '!=', $user->id)
+                    ->count();
+
+                if ($cekBidang > 0) {
+                    return back()->with('error', 'Setiap bidang hanya boleh memiliki satu Kepala Bidang.');
+                }
+            }
+            elseif ($jabatanNama === 'Kepala Seksi') {
+                if (!$request->bidang_id || !$request->seksi_id) {
+                    return back()->with('error', 'Kepala Seksi harus memilih bidang dan seksi.');
+                }
+            }
         }
 
-        elseif ($jabatan === 'Kepala Seksi') {
-            if (!$request->bidang_id || !$request->seksi_id)
-                return back()->with('error', 'Kepala Seksi harus memilih bidang dan seksi.');
-        }
-        
+        // (punyamu) admin tidak boleh ubah role user lain
         if ($current->role === 'admin' && $user->role !== $request->role) {
-        $request->merge(['role' => $user->role]);
+            $request->merge(['role' => $user->role]);
         }
 
         // 🚫 Cegah superuser menurunkan role sendiri
@@ -306,14 +362,14 @@ class AdminController extends Controller
 
         // ✅ Simpan perubahan
         $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-            'nip' => $request->nip,
-            'jabatan_id' => $request->jabatan_id,
+            'name'      => $request->name,
+            'email'     => $request->email,
+            'role'      => $request->role,
+            'nip'       => $request->nip,
+            'jabatan_id'=> $request->jabatan_id,
             'bidang_id' => $request->bidang_id,
-            'seksi_id' => $request->seksi_id,
-            'password' => $request->password ? Hash::make($request->password) : $user->password,
+            'seksi_id'  => $request->seksi_id,
+            'password'  => $request->password ? Hash::make($request->password) : $user->password,
         ]);
 
         return redirect()->route('admin.menu')->with('success', 'Data user berhasil diperbarui!');

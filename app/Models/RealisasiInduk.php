@@ -9,6 +9,7 @@ class RealisasiInduk extends Model
 {
     use HasFactory;
         protected $fillable = [
+            'tanggal',
             'tahun',
             'bidang_id',
             'seksi_id',
@@ -26,6 +27,10 @@ class RealisasiInduk extends Model
             'disposisi_kabid',
             'disposisi_kadis',
     ];
+        protected $casts = [
+        'tanggal' => 'date',
+    ];
+
 
     public function outputs() { return $this->hasMany(RealisasiOutput::class, 'induk_id'); }
     public function outcomes() { return $this->hasMany(RealisasiOutcome::class, 'induk_id'); }

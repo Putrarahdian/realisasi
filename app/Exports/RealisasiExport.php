@@ -56,7 +56,7 @@ class RealisasiExport implements
             'SASARAN STRATEGIS',
             'PROGRAM/KEGIATAN/SUB KEGIATAN',
             'INDIKATOR PROG/KEG/SUB KEG',
-            'Target', // sesuai contohmu
+            'Target',
             'HAMBATAN/KEBERHASILAN',
             'REKOMENDASI',
             'TL REKOMENDASI SEBELUMNYA',

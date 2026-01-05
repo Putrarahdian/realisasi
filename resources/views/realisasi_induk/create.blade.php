@@ -33,19 +33,13 @@
                         {{-- SECTION: Informasi Umum --}}
                         <h6 class="text-uppercase text-muted mb-3">Informasi Umum</h6>
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Tahun</label>
-                                <input
-                                    type="number"
-                                    name="induk[tahun]"
-                                    class="form-control @error('induk.tahun') is-invalid @enderror"
-                                    inputmode="numeric"
-                                    value="{{ old('induk.tahun', date('Y')) }}"
-                                    required
-                                >
-                                @error('induk.tahun')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+                                <input type="date"
+                                    name="induk[tanggal]"
+                                    class="form-control"
+                                    value="{{ old('tanggal') }}"
+                                    required>
                             </div>
 
                             @if(auth()->user()->role === 'superuser')

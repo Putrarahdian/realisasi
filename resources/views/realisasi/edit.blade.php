@@ -31,12 +31,6 @@
               </h5>
             </div>
 
-            @php
-              $targetOutputTw1 = isset($outputs['I'])
-                  ? optional($outputs['I']->first())->target
-                  : null;
-            @endphp
-
             <div class="table-responsive table-section">
               <table class="table table-bordered align-middle table-laporan">
                 <thead>
@@ -66,20 +60,11 @@
                       </td>
 
                       <td>
-                        @if($tw === 'I')
-                          <input type="number"
-                                 id="target-output-tw1"
-                                 name="output[{{ $tw }}][target]"
-                                 value="{{ $o->target ?? '' }}"
-                                 class="form-control text-end form-control-soft"
-                                 @if($isKasubagKeu) readonly @endif>
-                        @else
-                          {{-- HANYA TAMPIL: tidak dikirim ke backend supaya tidak membuat / mengubah record TW II–IV --}}
-                          <input type="number"
-                                 class="form-control text-end form-control-soft js-output-target-display"
-                                 value="{{ $targetOutputTw1 }}"
-                                 readonly>
-                        @endif
+                        <input type="number"
+                              name="output[{{ $tw }}][target]"
+                              value="{{ $o->target ?? '' }}"
+                              class="form-control text-end form-control-soft"
+                              @if($isKasubagKeu) readonly @endif>
                       </td>
 
                       <td>
@@ -103,12 +88,6 @@
                 b. Outcome <span class="text-muted fw-normal small">(Eselon III)</span>
               </h5>
             </div>
-
-            @php
-              $targetOutcomeTw1 = isset($outcomes['I'])
-                  ? optional($outcomes['I']->first())->target
-                  : null;
-            @endphp
 
             <div class="table-responsive table-section">
               <table class="table table-bordered align-middle table-laporan">
@@ -139,11 +118,11 @@
                       </td>
 
                       <td>
-                        {{-- HANYA TAMPIL: tidak dikirim ke backend supaya tidak membuat / mengubah record TW I–IV --}}
                         <input type="number"
-                               class="form-control text-end form-control-soft js-outcome-target-display"
-                               value="{{ $targetOutcomeTw1 }}"
-                               readonly>
+                              name="outcome[{{ $tw }}][target]"
+                              value="{{ $oc->target ?? '' }}"
+                              class="form-control text-end form-control-soft"
+                              @if($isKasubagKeu) readonly @endif>
                       </td>
 
                       <td>
@@ -169,9 +148,9 @@
             </div>
 
             @php
-              $sasaran = $induk->sasaran;
-              // target sasaran = total target output (semua TW), sesuai yang diminta
-              $targetSasaran = collect($outputs)->flatten()->sum('target');
+              $sasaran = $induk->sasaran instanceof \Illuminate\Support\Collection
+                  ? $induk->sasaran->first()
+                  : $induk->sasaran;
             @endphp
 
             <div class="table-responsive table-section">
@@ -197,16 +176,11 @@
                     </td>
 
                     <td>
-                      {{-- tampil readonly --}}
                       <input type="number"
-                             value="{{ $targetSasaran }}"
-                             class="form-control text-end form-control-soft"
-                             readonly>
-
-                      {{-- tetap dikirim ke backend --}}
-                      <input type="hidden"
-                             name="sasaran[target]"
-                             value="{{ $targetSasaran }}">
+                            name="sasaran[target]"
+                            value="{{ old('sasaran.target', optional($sasaran)->target) }}"
+                            class="form-control text-end form-control-soft"
+                            @if($isKasubagKeu) readonly @endif>
                     </td>
 
                     <td>
@@ -269,44 +243,50 @@
             </div>
           </div>
 
-          {{-- 🔹 Keberhasilan / Hambatan --}}
-          <div class="form-section mb-2">
-            <div class="form-section-header d-flex align-items-center mb-3">
-              <h5 class="mb-0">6. Keterangan Keberhasilan / Hambatan</h5>
-            </div>
-
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold text-muted">a. Keberhasilan</label>
-                @for($i = 1; $i <= 4; $i++)
-                  @php $field = "keberhasilan_tw{$i}"; @endphp
-                  <div class="mb-2">
-                    <small class="text-muted d-block mb-1">TW {{ $i }}</small>
-                    <textarea
-                      name="keberhasilan[{{ $field }}]"
-                      class="form-control form-control-soft"
-                      rows="2"
-                      @if($isKasubagKeu) readonly @endif>{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
-                  </div>
-                @endfor
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold text-muted">b. Hambatan</label>
-                @for($i = 1; $i <= 4; $i++)
-                  @php $field = "hambatan_tw{$i}"; @endphp
-                  <div class="mb-2">
-                    <small class="text-muted d-block mb-1">TW {{ $i }}</small>
-                    <textarea
-                      name="keberhasilan[{{ $field }}]"
-                      class="form-control form-control-soft"
-                      rows="2"
-                      @if($isKasubagKeu) readonly @endif>{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
-                  </div>
-                @endfor
-              </div>
-            </div>
+        {{-- 🔹 Keberhasilan / Hambatan --}}
+        <div class="form-section mb-2">
+          <div class="form-section-header d-flex align-items-center mb-3">
+            <h5 class="mb-0">6. Keterangan Keberhasilan / Hambatan</h5>
           </div>
+
+          <div class="row g-3">
+
+            {{-- KEBERHASILAN --}}
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-muted">a. Keberhasilan</label>
+              @for($i = 1; $i <= 4; $i++)
+                @php $field = "keberhasilan_tw{$i}"; @endphp
+                <div class="mb-2">
+                  <small class="text-muted d-block mb-1">TW {{ $i }}</small>
+                  <textarea
+                    name="keberhasilan[{{ $field }}]"
+                    class="form-control form-control-soft"
+                    rows="2"
+                    @if($isKasubagKeu) readonly @endif
+                  >{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
+                </div>
+              @endfor
+            </div>
+
+            {{-- HAMBATAN --}}
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-muted">b. Hambatan</label>
+              @for($i = 1; $i <= 4; $i++)
+                @php $field = "hambatan_tw{$i}"; @endphp
+                <div class="mb-2">
+                  <small class="text-muted d-block mb-1">TW {{ $i }}</small>
+                  <textarea
+                    name="keberhasilan[{{ $field }}]"
+                    class="form-control form-control-soft"
+                    rows="2"
+                    @if($isKasubagKeu) readonly @endif
+                  >{{ old("keberhasilan.$field", optional($keberhasilan)->$field) }}</textarea>
+                </div>
+              @endfor
+            </div>
+
+          </div>
+        </div>
 
           {{-- 🔹 Tombol Aksi --}}
           <div class="form-actions mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -332,27 +312,5 @@
     </div>
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const inputTw1 = document.getElementById('target-output-tw1');
-  if (!inputTw1) return;
-
-  const syncTargets = () => {
-    const val = inputTw1.value ?? '';
-
-    // Output TW II–IV (display only)
-    document.querySelectorAll('.js-output-target-display').forEach((el) => {
-      el.value = val;
-    });
-  };
-
-  inputTw1.addEventListener('input', syncTargets);
-  inputTw1.addEventListener('change', syncTargets);
-
-  // sync awal saat halaman pertama kali dibuka
-  syncTargets();
-});
-</script>
 
 @endsection

@@ -59,55 +59,41 @@
         </thead>
         <tbody>
         @php
-          $no              = 1;
-          $targetO         = null; // target tahunan (ambil sekali)
+          $totalTargetO = 0;
           $totalRealisasiO = 0;
         @endphp
-        @foreach (['I','II','III','IV'] as $tw)
-          @php
-            $o = optional($outputs[$tw] ?? collect())->first();
 
-            if ($o) {
-              // target absolut: ambil sekali saja (target > 0 pertama)
-              if ($targetO === null && (float)($o->target ?? 0) > 0) {
-                $targetO = (float)$o->target;
+        @foreach(['I','II','III','IV'] as $tw)
+            @php
+              $o = optional($outputs[$tw] ?? collect())->first();
+
+              if($o){
+                  // Tambahkan semua target dan realisasi tiap triwulan
+                  $totalTargetO += (float)($o->target ?? 0);
+                  $totalRealisasiO += (float)($o->realisasi ?? 0);
               }
-
-              // jumlah realisasi
-              $totalRealisasiO += (float)($o->realisasi ?? 0);
-            }
-          @endphp
-
+            @endphp
             <tr>
-              <td class="text-center">{{ $no++ }}</td>
+              <td class="text-center">{{ $loop->iteration }}</td>
               <td>Triwulan {{ $tw }}</td>
               <td>{{ $o->uraian ?? '-' }}</td>
-
-              {{-- target tampil konsisten (target tahunan) --}}
-              <td class="text-center">{{ $targetO !== null ? $targetO : '-' }}</td>
-
+              <td class="text-center">{{ $o->target ?? '-' }}</td>
               <td class="text-center">{{ $o->realisasi ?? '-' }}</td>
-              <td class="text-center">
-                {{ optional($o)->capaian !== null ? number_format(optional($o)->capaian, 0) . '%' : '-' }}
-              </td>
+              <td class="text-center">{{ optional($o)->capaian !== null ? number_format(optional($o)->capaian, 0) . '%' : '-' }}</td>
             </tr>
         @endforeach
 
-          @php
-            $capaianTotalO = ($targetO > 0) ? round($totalRealisasiO / $targetO * 100, 2) : null;
-          @endphp
-          <tr class="fw-bold text-center table-light">
+        @php
+            $capaianTotalO = ($totalTargetO > 0) ? round($totalRealisasiO / $totalTargetO * 100, 2) : null;
+        @endphp
+
+        <tr class="fw-bold text-center table-light">
             <td colspan="3">Jumlah</td>
-            <td>{{ $targetO !== null ? $targetO : '-' }}</td>
+            <td>{{ $totalTargetO ?: '-' }}</td>
             <td>{{ $totalRealisasiO ?: '-' }}</td>
-            <td>
-              @if(!is_null($capaianTotalO))
-                {{ number_format($capaianTotalO, 0) }}%
-              @else
-                -
-              @endif
-            </td>
-          </tr>
+            <td>{{ !is_null($capaianTotalO) ? number_format($capaianTotalO, 0) . '%' : '-' }}</td>
+        </tr>
+
         </tbody>
       </table>
     </div>
@@ -130,46 +116,40 @@
         </thead>
         <tbody>
         @php
-          $no               = 1;
-          $targetOc         = null; // target tahunan (ambil sekali)
+          $totalTargetOc = 0;
           $totalRealisasiOc = 0;
         @endphp
-        @foreach (['I','II','III','IV'] as $tw)
-          @php
-            $oc = optional($outcomes[$tw] ?? collect())->first();
 
-            if ($oc) {
-              if ($targetOc === null && (float)($oc->target ?? 0) > 0) {
-                $targetOc = (float)$oc->target;
-              }
+        @foreach(['I','II','III','IV'] as $tw)
+            @php
+              $oc = optional($outcomes[$tw] ?? collect())->first();
 
-              $totalRealisasiOc += (float)($oc->realisasi ?? 0);
-            }
-          @endphp
+              if($oc){
+                  // Jumlah target dan realisasi tiap triwulan
+                  $totalTargetOc += (float)($oc->target ?? 0);
+                  $totalRealisasiOc += (float)($oc->realisasi ?? 0);
+                }
+            @endphp
             <tr>
-              <td class="text-center">{{ $no++ }}</td>
+              <td class="text-center">{{ $loop->iteration }}</td>
               <td>Triwulan {{ $tw }}</td>
               <td>{{ $oc->uraian ?? '-' }}</td>
-
-              {{-- target tampil konsisten (target tahunan) --}}
-              <td class="text-center">{{ $targetOc !== null ? $targetOc : '-' }}</td>
-
+              <td class="text-center">{{ $oc->target ?? '-' }}</td>
               <td class="text-center">{{ $oc->realisasi ?? '-' }}</td>
-              <td class="text-center">
-                {{ optional($oc)->capaian !== null ? number_format(optional($oc)->capaian, 0) . '%' : '-' }}
-              </td>
+              <td class="text-center">{{ optional($oc)->capaian !== null ? number_format(optional($oc)->capaian, 0) . '%' : '-' }}</td>
             </tr>
         @endforeach
 
-            @php
-              $capaianTotalOc = ($targetOc > 0) ? round($totalRealisasiOc / $targetOc * 100, 2) : null;
-            @endphp
-            <tr class="fw-bold text-center table-light">
-              <td colspan="3">Jumlah</td>
-              <td>{{ $targetOc !== null ? $targetOc : '-' }}</td>
-              <td>{{ $totalRealisasiOc ?: '-' }}</td>
-              <td>{{ !is_null($capaianTotalOc) ? number_format($capaianTotalOc, 0) . '%' : '-' }}</td>
-            </tr>
+        @php
+            $capaianTotalOc = ($totalTargetOc > 0) ? round($totalRealisasiOc / $totalTargetOc * 100, 2) : null;
+        @endphp
+
+        <tr class="fw-bold text-center table-light">
+            <td colspan="3">Jumlah</td>
+            <td>{{ $totalTargetOc ?: '-' }}</td>
+            <td>{{ $totalRealisasiOc ?: '-' }}</td>
+            <td>{{ !is_null($capaianTotalOc) ? number_format($capaianTotalOc, 0) . '%' : '-' }}</td>
+        </tr>
         </tbody>
       </table>
     </div>

@@ -139,6 +139,9 @@ class RealisasiController extends Controller
         
         $selectedBidangId = $request->input('bidang_id');
         $selectedSeksiId = $request->input('seksi_id');
+        $tanggalDari   = $request->input('tanggal_dari');
+        $tanggalSampai = $request->input('tanggal_sampai');
+
 
         if ($user->role === 'superuser') {
 
@@ -168,8 +171,14 @@ class RealisasiController extends Controller
         $query->where('seksi_id', $selectedSeksiId);
         }
 
-        $tahun = $request->input('tahun', date('Y'));
-        $query->where('tahun', $tahun);
+        if ($tanggalDari && $tanggalSampai) {
+            $query->whereBetween('tanggal', [$tanggalDari, $tanggalSampai]);
+        } elseif ($tanggalDari) {
+            $query->whereDate('tanggal', '>=', $tanggalDari);
+        } elseif ($tanggalSampai) {
+            $query->whereDate('tanggal', '<=', $tanggalSampai);
+        }
+
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -188,7 +197,7 @@ class RealisasiController extends Controller
         }
 
         $data_induk = $query->orderBy('id', 'desc')->paginate(5);
-        $data_induk->appends($request->only('search', 'tahun',  'bidang_id', 'seksi_id'));
+        $data_induk->appends($request->only('search', 'tanggal_dari', 'tanggal_sampai',  'bidang_id', 'seksi_id'));
 
         
         $tahunDashboard = $request->input('tahun_dashboard', date('Y'));
@@ -219,7 +228,7 @@ class RealisasiController extends Controller
             $belumDiisi[$tw] = $qBelum->get();
         }
 
-        return view('realisasi_induk.show', compact('data_induk', 'tahun','seksis', 'bidangs','user') + [
+        return view('realisasi_induk.show', compact('data_induk', 'tanggalDari', 'tanggalSampai', 'seksis', 'bidangs','user') + [
             'tahunDashboard' => $tahunDashboard,
             'triwulans' => $triwulans,
             'belumDiisi' => $belumDiisi,
@@ -239,6 +248,8 @@ class RealisasiController extends Controller
         $tw   = $mapTriwulan[$no];
         $user = Auth::user();
 
+        $tahun = (int) $request->input('tahun', date('Y'));
+
         // ambil data induk + relasi per triwulan
         $query = RealisasiInduk::with([
             'outputs' => function ($q) use ($tw) {
@@ -251,7 +262,9 @@ class RealisasiController extends Controller
                 $q->where('triwulan', $tw);
             },
             'bidang',
-        ]);
+        ])
+
+        ->where('tahun', $tahun);
 
         // untuk dropdown bidang di superuser
         $bidangs = [];
@@ -266,18 +279,26 @@ class RealisasiController extends Controller
             $query->where('bidang_id', $request->bidang_id);
         }
 
-        // filter tahun
-        $tahun = $request->input('tahun', date('Y'));
-        $query->where('tahun', $tahun);
+        // filter tanggal
+        $tanggalDari   = $request->input('tanggal_dari');
+        $tanggalSampai = $request->input('tanggal_sampai');
+
+        if ($tanggalDari && $tanggalSampai) {
+            $query->whereBetween('tanggal', [$tanggalDari, $tanggalSampai]);
+        } elseif ($tanggalDari) {
+            $query->whereDate('tanggal', '>=', $tanggalDari);
+        } elseif ($tanggalSampai) {
+            $query->whereDate('tanggal', '<=', $tanggalSampai);
+        }
 
         // ambil data
         $data_induk = $query->orderBy('id', 'desc')->paginate(10);
-        $data_induk->appends($request->only('tahun', 'bidang_id'));
+        $data_induk->appends($request->only('tanggal_dari', 'tanggal_sampai', 'bidang_id', 'tahun'));
         
         return view('triwulan.index', compact(
             'tw',
-            'no',
             'tahun',
+            'no',
             'data_induk',
             'bidangs'
         ));
@@ -327,8 +348,6 @@ class RealisasiController extends Controller
         ]);
     }
 
-
-    // 🔹 Proses simpan dari form khusus Triwulan (isi child untuk satu triwulan)
     public function storeByTriwulan($no, RealisasiInduk $induk, Request $request)
     {
         $this->forbidAdminOnKegiatan();
@@ -341,7 +360,7 @@ class RealisasiController extends Controller
         // ✅ KASUBAG KEUANGAN: hanya boleh simpan data keuangan
         if ($this->isKasubagKeuangan()) {
             $this->validateKeuangan($request);
-        
+
             $indukId = $induk->id;
             $this->authorizeBidang($induk);
 
@@ -354,52 +373,59 @@ class RealisasiController extends Controller
                     ->route('realisasi.triwulan.index', $no)
                     ->with('error', "Target Keuangan Triwulan {$kodeTriwulan} belum diisi Seksi.");
             }
-        
+
             $k = $request->input('keuangan', []);
-            $realisasiK= (float) ($k['realisasi'] ?? 0);
+            $realisasiK = (float) ($k['realisasi'] ?? 0);
 
             $rowKeu->update([
                 'user_id'   => auth()->id(),
                 'realisasi' => $realisasiK,
                 'capaian'   => 0,
             ]);
-        
+
             $this->hitungUlangCapaianKeuangan($indukId);
-        
+
             return redirect()
                 ->route('realisasi.triwulan.index', $no)
                 ->with('success', "Data Keuangan Triwulan {$kodeTriwulan} berhasil disimpan.");
         }
 
+        // ===================== VALIDASI =====================
         $rules = [
             'keuangan' => 'required|array',
 
             // OUTPUT
-            'output.uraian'        => 'required|string',
-            'output.target'        => 'required|numeric|min:0',
-            'output.realisasi'     => 'required|numeric|min:0',
+            'output.uraian'    => 'required|string',
+            'output.target'    => 'required|numeric|min:0',
+            'output.realisasi' => 'required|numeric|min:0',
 
             // OUTCOME
-            'outcome.uraian'       => 'required|string',
-            'outcome.target'       => 'required|numeric|min:0',
-            'outcome.realisasi'    => 'required|numeric|min:0',
+            'outcome.uraian'    => 'required|string',
+            'outcome.target'    => 'required|numeric|min:0',
+            'outcome.realisasi' => 'required|numeric|min:0',
 
             // KEUANGAN (selalu wajib tiap TW)
-            'keuangan.target'      => 'required|numeric|min:0',
-            
-            // sasaran
-            'sasaran.target' => 'required|numeric|min:0',
+            'keuangan.target' => 'required|numeric|min:0',
+
+            // SASARAN: tiap triwulan wajib target & realisasi
+            'sasaran.target'    => 'required|numeric|min:0',
+            'sasaran.realisasi' => 'required|numeric|min:0',
         ];
 
-        // tw 1 uraian dan target wajib diisi
+        // TW1: uraian sasaran wajib diisi
         if ((int)$no === 1) {
             $rules['sasaran.uraian'] = 'required|string';
-            $rules['sasaran.target'] = 'required|numeric|min:0';
         }
 
-        // 🔹 Sasaran realisasi wajib di TW IV
-        if ((int)$no === 4) {
-            $rules['sasaran.realisasi'] = 'required|numeric|min:0';
+        // TW2-4: wajib sudah ada uraian sasaran dari TW1
+        if ((int)$no > 1) {
+            $sasaranRowCheck = RealisasiSasaran::where('induk_id', $induk->id)->first();
+            if (!$sasaranRowCheck || empty(trim($sasaranRowCheck->uraian ?? ''))) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'Uraian Sasaran harus diisi pada Triwulan I terlebih dahulu.');
+            }
         }
 
         $request->validate($rules);
@@ -407,11 +433,9 @@ class RealisasiController extends Controller
         $indukId = $induk->id;
         $this->authorizeBidang($induk);
 
-        // 🔹 OUTPUT
+        // ===================== OUTPUT =====================
         $o = $request->input('output', []);
-        
-        $targetO  = (float) ($o['target'] ?? 0);
-
+        $targetO    = (float) ($o['target'] ?? 0);
         $realisasiO = (float) ($o['realisasi'] ?? 0);
 
         if ($targetO <= 0) {
@@ -421,6 +445,7 @@ class RealisasiController extends Controller
         } else {
             $capaianO = round($realisasiO / $targetO * 100, 2);
         }
+
         if (!empty($o['uraian']) || $targetO > 0 || $realisasiO > 0) {
             RealisasiOutput::updateOrCreate(
                 ['induk_id' => $indukId, 'triwulan' => $kodeTriwulan],
@@ -434,11 +459,9 @@ class RealisasiController extends Controller
             );
         }
 
-        // 🔹 OUTCOME
+        // ===================== OUTCOME =====================
         $oc = $request->input('outcome', []);
-
-        $targetOc = (float) ($oc['target'] ?? 0);
-
+        $targetOc    = (float) ($oc['target'] ?? 0);
         $realisasiOc = (float) ($oc['realisasi'] ?? 0);
 
         if ($targetOc <= 0) {
@@ -461,43 +484,45 @@ class RealisasiController extends Controller
                 ]
             );
         }
-        
-        // ===================== SASARAN (TOTAL target disimpan di 1 baris) =====================
+
+        // ===================== SASARAN =====================
         $s = $request->input('sasaran', []);
 
-        $sasaranRow = RealisasiSasaran::where('induk_id', $indukId)->first();
-
-        $oldTarget    = (float) ($sasaranRow?->target ?? 0);
-        $oldRealisasi = (float) ($sasaranRow?->realisasi ?? 0);
-
-        // input target TW dianggap tambahan
-        $inputTargetTw = (float) ($s['target'] ?? 0);
-        $newTarget     = $oldTarget + $inputTargetTw;
-
-        // realisasi hanya diisi TW4 (kalau mau)
-        $newRealisasi = $oldRealisasi;
-        if ((int)$no === 4) {
-            $newRealisasi = (float) ($s['realisasi'] ?? 0);
-        }
-
-        $newUraian = $s['uraian'] ?? ($sasaranRow?->uraian ?? '-');
-
-        $newCapaian = $newTarget > 0
-            ? round($newRealisasi / $newTarget * 100, 2)
-            : 0;
-
-        RealisasiSasaran::updateOrCreate(
+        $sasaran = RealisasiSasaran::firstOrCreate(
             ['induk_id' => $indukId],
-            [
-                'user_id'   => auth()->id(),
-                'uraian'    => $newUraian,
-                'target'    => $newTarget,
-                'realisasi' => $newRealisasi,
-                'capaian'   => $newCapaian,
-            ]
+            ['user_id' => auth()->id(), 'uraian' => null]
         );
 
+        // uraian hanya boleh diisi di TW1
+        if ((int)$no === 1 && !empty(trim($s['uraian'] ?? ''))) {
+            $sasaran->uraian = $s['uraian'];
+        }
 
+        // simpan nilai per triwulan
+        $targetTw    = (float)($s['target'] ?? 0);
+        $realisasiTw = (float)($s['realisasi'] ?? 0);
+
+        $sasaran->{"target_tw{$no}"}    = $targetTw;
+        $sasaran->{"realisasi_tw{$no}"} = $realisasiTw;
+
+        // HITUNG TOTAL (SUM TW1–TW4)
+        $totalTarget =
+            ($sasaran->target_tw1 ?? 0) +
+            ($sasaran->target_tw2 ?? 0) +
+            ($sasaran->target_tw3 ?? 0) +
+            ($sasaran->target_tw4 ?? 0);
+
+        $totalRealisasi =
+            ($sasaran->realisasi_tw1 ?? 0) +
+            ($sasaran->realisasi_tw2 ?? 0) +
+            ($sasaran->realisasi_tw3 ?? 0) +
+            ($sasaran->realisasi_tw4 ?? 0);
+
+        // simpan TOTAL SAJA
+        $sasaran->target    = $totalTarget;
+        $sasaran->realisasi = $totalRealisasi;
+        $sasaran->user_id   = auth()->id();
+        $sasaran->save();
 
         // ===================== KEUANGAN =====================
         $k = $request->input('keuangan', []);
@@ -506,27 +531,24 @@ class RealisasiController extends Controller
         $existingKeu = RealisasiKeuangan::where('induk_id', $indukId)
             ->where('triwulan', $kodeTriwulan)
             ->first();
-    
-            RealisasiKeuangan::updateOrCreate(
-                ['induk_id' => $indukId, 'triwulan' => $kodeTriwulan],
-                [
-                    'user_id'   => auth()->id(),
-                    'target'    => $targetK,
-                    'realisasi' => $existingKeu?->realisasi,
-                    'capaian'   => 0,
-                ]
-            );
+
+        RealisasiKeuangan::updateOrCreate(
+            ['induk_id' => $indukId, 'triwulan' => $kodeTriwulan],
+            [
+                'user_id'   => auth()->id(),
+                'target'    => $targetK,
+                'realisasi' => $existingKeu?->realisasi,
+                'capaian'   => 0,
+            ]
+        );
+
         $this->hitungUlangCapaianKeuangan($induk->id);
-        
 
         // ===================== KEBERHASILAN / HAMBATAN PER TRIWULAN =====================
         $teksKeberhasilan = trim(strip_tags($request->input('keberhasilan_triwulan', '')));
         $teksHambatan     = trim(strip_tags($request->input('hambatan_triwulan', '')));
 
-        // kalau dua-duanya kosong, tidak usah simpan apa-apa
         if ($teksKeberhasilan !== '' || $teksHambatan !== '') {
-
-            // ambil atau buat baris realisasi_keberhasilan untuk induk ini
             $rekap = RealisasiKeberhasilan::firstOrCreate(
                 ['induk_id' => $indukId],
                 [
@@ -536,7 +558,6 @@ class RealisasiController extends Controller
                 ]
             );
 
-            // simpan ke kolom sesuai triwulan
             switch ((int) $no) {
                 case 1:
                     $rekap->keberhasilan_tw1 = $teksKeberhasilan;
@@ -562,8 +583,7 @@ class RealisasiController extends Controller
         return redirect()
             ->route('realisasi.triwulan.index', $no)
             ->with('success', "Data Triwulan {$kodeTriwulan} berhasil disimpan.");
-    } 
-
+    }
 
     public function createInduk()
     {
@@ -592,11 +612,10 @@ class RealisasiController extends Controller
     public function storeInduk(Request $request)
     {
         $this->forbidAdminOnKegiatan();
-        // hanya superuser & user (seksi) yang boleh simpan
         $this->authorizeEditData();
 
         $rules = [
-            'induk.tahun'             => 'required|digits:4',
+            'induk.tanggal'           => 'required|date',
             'induk.sasaran_strategis' => 'required|string',
             'induk.program'           => 'required|string',
             'induk.indikator'         => 'required|string',
@@ -617,6 +636,8 @@ class RealisasiController extends Controller
 
         $validated = $request->validate($rules);
         $data      = $validated['induk'];
+        $tanggal   = $data['tanggal'];
+        $tahun     = \Carbon\Carbon::parse($tanggal)->year;
 
         // tentukan bidang_id
         if (auth()->user()->role === 'superuser') {
@@ -629,8 +650,10 @@ class RealisasiController extends Controller
         $user = auth()->user();
 
         $induk = RealisasiInduk::create([
-            'tahun'             => $data['tahun'],
+            'tanggal'           => $tanggal,
+            'tahun'             => $tahun,
             'bidang_id'         => $bidangId,
+            'seksi_id'          => $seksiId,
             'sasaran_strategis' => $data['sasaran_strategis'],
             'program'           => $data['program'],
             'indikator'         => $data['indikator'],
@@ -641,7 +664,6 @@ class RealisasiController extends Controller
             'dokumen'           => $data['dokumen'],
             'strategi'          => $data['strategi'],
             'alasan'            => $data['alasan'],
-            'seksi_id'          => $seksiId,
         ]);
 
         return redirect()->route('realisasi.index')
@@ -888,23 +910,24 @@ class RealisasiController extends Controller
         // hitung ulang capaian keuangan setelah target berubah
         $this->hitungUlangCapaianKeuangan($indukId);
 
-        // ===================== SASARAN (TOTAL FINAL) =====================
+        // ===================== SASARAN (EDIT TOTAL SAJA) =====================
         $s = $request->input('sasaran', []);
         if (is_array($s)) {
-            $targetS    = (float) ($s['target'] ?? 0);
-            $realisasiS = (float) ($s['realisasi'] ?? 0);
-            $capaianS   = $targetS > 0 ? round($realisasiS / $targetS * 100, 2) : 0;
 
-            RealisasiSasaran::updateOrCreate(
+            $sasaran = RealisasiSasaran::firstOrCreate(
                 ['induk_id' => $indukId],
-                [
-                    'user_id'   => auth()->id(),
-                    'uraian'    => $s['uraian'] ?? '-',
-                    'target'    => $targetS,
-                    'realisasi' => $realisasiS,
-                    'capaian'   => $capaianS,
-                ]
+                ['user_id' => auth()->id()]
             );
+
+            if (!empty(trim($s['uraian'] ?? ''))) {
+                $sasaran->uraian = $s['uraian'];
+            }
+
+            // TOTAL MANUAL
+            $sasaran->target    = (float)($s['target'] ?? 0);
+            $sasaran->realisasi = (float)($s['realisasi'] ?? 0);
+            $sasaran->user_id   = auth()->id();
+            $sasaran->save();
         }
 
         // ===================== KEBERHASILAN =====================
@@ -961,6 +984,7 @@ class RealisasiController extends Controller
         $this->authorizeBidang($induk);
 
         $validated = $request->validate([
+            'induk.tanggal'           => 'required|date',
             'induk.sasaran_strategis' => 'required|string',
             'induk.program'           => 'required|string',
             'induk.indikator'         => 'required|string',
@@ -973,7 +997,7 @@ class RealisasiController extends Controller
             'induk.alasan'            => 'required|string',
         ]);
 
-        $data         = $validated['induk'];
+        $data  = $validated['induk'];
 
         $induk->update($data);
 

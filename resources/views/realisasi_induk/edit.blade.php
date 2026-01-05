@@ -15,6 +15,15 @@
                 </div>
 
                 {{-- Body --}}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+                    <input type="date"
+                        name="tanggal"
+                        class="form-control"
+                        value="{{ old('tanggal', optional($induk->tanggal)->format('Y-m-d')) }}"
+                        required>
+                </div>
+
                 <div class="card-body bg-light">
                     @if ($errors->any())
                         <div class="alert alert-danger">

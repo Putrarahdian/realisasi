@@ -163,36 +163,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const roleLockedInitially = roleSelect?.dataset.locked === '1';
 
-  // 👁️ Toggle password visibility
-  if (togglePassword && passwordInput) {
-    togglePassword.addEventListener('click', () => {
-      const isPw = passwordInput.type === 'password';
-      passwordInput.type = isPw ? 'text' : 'password';
-      if (eyeIcon) {
-        eyeIcon.classList.toggle('bi-eye-fill', !isPw);
-        eyeIcon.classList.toggle('bi-eye-slash-fill', isPw);
-      }
-    });
+  function loadSeksi(bidangId) {
+    if (!seksiSelect) return;
+    if (!bidangId) {
+      seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
+      return;
+    }
+    fetch(urlTemplate.replace('BIDANG_ID', bidangId))
+      .then(r => r.json())
+      .then(list => {
+        seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
+        list.forEach(s => {
+          seksiSelect.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.nama}</option>`);
+        });
+        const oldSeksi = "{{ old('seksi_id') }}";
+        if (oldSeksi) seksiSelect.value = oldSeksi;
+      })
+      .catch(() => {
+        seksiSelect.innerHTML = '<option>Gagal memuat data</option>';
+      });
   }
 
-  // Kosongkan bawah saat ROLE diubah
-  roleSelect?.addEventListener('change', () => {
-    if (jabatanSelect) jabatanSelect.value = '';
-    if (bidangSelect)  bidangSelect.value  = '';
-    if (seksiSelect)   seksiSelect.value   = '';
-
-    if (bidangSelect) bidangSelect.disabled = false;
-    if (seksiSelect)  seksiSelect.disabled  = false;
-  });
-
-  // === Sinkron Role dengan Jabatan (kepala_dinas & kepala_bidang -> admin) ===
   function syncRoleWithJabatan() {
     if (!roleSelect || !jabatanSelect) return;
-    // kalau dari PHP sudah dikunci (admin), jangan diutak-atik
     if (roleLockedInitially) return;
 
     const jenis = jabatanSelect.options[jabatanSelect.selectedIndex]?.dataset?.jenis || '';
-
     const isKepala = (jenis === 'kepala_dinas' || jenis === 'kepala_bidang');
 
     if (isKepala) {
@@ -210,92 +206,101 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Load seksi berdasarkan bidang (AJAX)
-  function loadSeksi(bidangId) {
-    if (!seksiSelect) return;
-    if (!bidangId) {
-      seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
-      return;
-    }
-    fetch(urlTemplate.replace('BIDANG_ID', bidangId))
-      .then(r => r.json())
-      .then(list => {
-        seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
-        list.forEach(s => {
-          seksiSelect.insertAdjacentHTML('beforeend',
-            `<option value="${s.id}">${s.nama}</option>`);
-        });
-        // kalau ada old('seksi_id'), coba pilih lagi
-        const oldSeksi = "{{ old('seksi_id') }}";
-        if (oldSeksi) {
-          seksiSelect.value = oldSeksi;
-        }
-      })
-      .catch(() => {
-        seksiSelect.innerHTML = '<option>Gagal memuat data</option>';
-      });
-  }
-
-  // Kunci/enable Bidang & Seksi sesuai jenis jabatan
   function updateLock() {
     if (!jabatanSelect || !bidangSelect || !seksiSelect) return;
 
     const jenis = jabatanSelect.options[jabatanSelect.selectedIndex]?.dataset?.jenis || '';
 
+    bidangSelect.required = false;
+    seksiSelect.required  = false;
+
     if (jenis === 'kasubag_keuangan') {
+      seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
       bidangSelect.value = '';
       seksiSelect.value  = '';
       bidangSelect.disabled = true;
       seksiSelect.disabled  = true;
-    return;
+      return;
     }
 
     if (jenis === 'kepala_dinas' || jenis === 'sekretaris') {
+      seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
+      bidangSelect.value = '';
+      seksiSelect.value  = '';
       bidangSelect.disabled = true;
       seksiSelect.disabled  = true;
+      return;
     }
-    else if (jenis === 'kepala_bidang') {
+
+    if (jenis === 'kepala_bidang') {
+      seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
       bidangSelect.disabled = false;
+      seksiSelect.value     = '';
       seksiSelect.disabled  = true;
+
+      bidangSelect.required = true;
+      return;
     }
-    else if (jenis === 'kepala_seksi') {
-      bidangSelect.disabled = false;
-      seksiSelect.disabled  = false;
-      if (bidangSelect.value) {
-        loadSeksi(bidangSelect.value);
-      }
+
+
+    bidangSelect.disabled = false;
+    seksiSelect.disabled  = false;
+
+    bidangSelect.required = true;
+    seksiSelect.required  = true;
+
+    if (bidangSelect.value) {
+      seksiSelect.value = '';
+      loadSeksi(bidangSelect.value);
     } else {
-      bidangSelect.disabled = false;
-      seksiSelect.disabled  = false;
+      seksiSelect.innerHTML = '<option value="">-- Pilih Seksi --</option>';
     }
   }
 
-  // Event: jabatan diubah
+  // Toggle password
+  if (togglePassword && passwordInput) {
+    togglePassword.addEventListener('click', () => {
+      const isPw = passwordInput.type === 'password';
+      passwordInput.type = isPw ? 'text' : 'password';
+      if (eyeIcon) {
+        eyeIcon.classList.toggle('bi-eye-fill', !isPw);
+        eyeIcon.classList.toggle('bi-eye-slash-fill', isPw);
+      }
+    });
+  }
+
+  if (roleSelect && !roleLockedInitially) {
+    roleSelect.addEventListener('change', () => {
+      if (jabatanSelect) jabatanSelect.value = '';
+      if (bidangSelect)  bidangSelect.value  = '';
+      if (seksiSelect)   seksiSelect.value   = '';
+
+      if (bidangSelect) bidangSelect.disabled = false;
+      if (seksiSelect)  seksiSelect.disabled  = false;
+
+      if (bidangSelect) bidangSelect.required = false;
+      if (seksiSelect)  seksiSelect.required  = false;
+    });
+  }
+
   jabatanSelect?.addEventListener('change', function () {
     updateLock();
     syncRoleWithJabatan();
   });
 
-  // Event: bidang diubah -> reload list seksi
   bidangSelect?.addEventListener('change', function () {
-    if (!seksiSelect) return;
-    // hanya khusus jabatan kepala_seksi yang butuh filter, tapi aman kalau dipakai semua
+    if (seksiSelect) seksiSelect.value = '';
     loadSeksi(bidangSelect.value || null);
   });
 
-  // Inisialisasi saat halaman pertama kali dibuka (misal setelah validasi gagal)
-  if (jabatanSelect && jabatanSelect.value) {
-    updateLock();
-    syncRoleWithJabatan();
-    if (bidangSelect && bidangSelect.value && jabatanSelect.options[jabatanSelect.selectedIndex]?.dataset?.jenis === 'kepala_seksi') {
-      loadSeksi(bidangSelect.value);
-    }
-  }
+  // init (setelah gagal validasi / reload)
+  updateLock();
+  syncRoleWithJabatan();
 
-  // NIP hanya angka
   nipInput?.addEventListener('input', function () {
     this.value = this.value.replace(/\D/g, '');
   });
 });
 </script>
+
 @endsection

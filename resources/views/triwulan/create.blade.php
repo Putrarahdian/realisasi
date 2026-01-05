@@ -3,13 +3,14 @@
 @section('content')
 @php
   $isKasubagKeuangan = auth()->user()?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
-
-  // target keuangan dari DB (kalau sudah ada)
   $targetKeuExisting = $keuangan->target ?? null;
 
-  // uraian sasaran: di create dikunci tapi tetap ditampilkan & tetap dikirim ke backend
-  // kalau belum ada sasaran di DB, ambil default dari induk->sasaran_strategis (biar TW1 tetap lolos validasi)
-  $uraianSasaranDefault = old('sasaran.uraian', $sasaran->uraian ?? ($induk->sasaran_strategis ?? ''));
+  $isTw1 = ((int)$no === 1);
+
+  // TW1: kosong (kecuali old() kalau validasi gagal)
+  $uraianSasaranDefault = $isTw1
+      ? old('sasaran.uraian', '')
+      : old('sasaran.uraian', $sasaran->uraian ?? '');
 @endphp
 
 <div class="container py-4">
@@ -127,26 +128,34 @@
                   Uraian Sasaran
                   @if($no == 1) <span class="text-danger">*</span> @endif
                 </label>
-
-                <input type="text"
-                       class="form-control @error('sasaran.uraian') is-invalid @enderror"
-                       value="{{ $uraianSasaranDefault }}"
-                       readonly>
-
-                <input type="hidden" name="sasaran[uraian]" value="{{ $uraianSasaranDefault }}">
-
-                @error('sasaran.uraian') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                  @if((int)$no === 1)
+                    <input type="text"
+                          name="sasaran[uraian]"
+                          class="form-control @error('sasaran.uraian') is-invalid @enderror"
+                          value="{{ $uraianSasaranDefault }}"
+                          required>
+                    @error('sasaran.uraian') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                  @else
+                    <input type="text"
+                          class="form-control"
+                          value="{{ $uraianSasaranDefault }}"
+                          readonly>
+                    <input type="hidden"
+                          name="sasaran[uraian]"
+                          value="{{ $uraianSasaranDefault }}">
+                  @endif
               </div>
 
               <div class="row">
                 {{-- ✅ Target sasaran bisa diinput tiap triwulan --}}
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Target <span class="text-danger">*</span></label>
-                  <input type="number" step="0.01"
-                         name="sasaran[target]"
-                         class="form-control @error('sasaran.target') is-invalid @enderror"
-                         value="{{ old('sasaran.target') }}"
-                         required>
+                  <input type="number"
+                        name="sasaran[target]"
+                        class="form-control @error('sasaran.target') is-invalid @enderror"
+                        value="{{ old('sasaran.target') }}"
+                        required>
+                        <small>Target TW sebelumnya: {{ $sasaran->target_tw1 ?? '-' }}</small>
                   @error('sasaran.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
                   <small class="text-muted d-block mt-1">
                     Isi target TW ini. Di rekap/show akan menjadi akumulasi total.
@@ -156,11 +165,11 @@
                 {{-- ✅ Realisasi sasaran juga bisa diinput tiap triwulan --}}
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Realisasi <span class="text-danger">*</span></label>
-                  <input type="number" step="0.01"
-                         name="sasaran[realisasi]"
-                         class="form-control @error('sasaran.realisasi') is-invalid @enderror"
-                         value="{{ old('sasaran.realisasi') }}"
-                         required>
+                    <input type="number" step="0.01"
+                          name="sasaran[realisasi]"
+                          class="form-control @error('sasaran.realisasi') is-invalid @enderror"
+                          value="{{ old('sasaran.realisasi') }}"
+                          required>
                   @error('sasaran.realisasi') <div class="invalid-feedback">{{ $message }}</div> @enderror
                   <small class="text-muted d-block mt-1">
                     Isi realisasi TW ini. Di rekap/show akan menjadi akumulasi total.

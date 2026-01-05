@@ -53,6 +53,10 @@ Route::middleware('auth')->group(function () {
             ->name('rekap.anak.download');
         Route::post('/rekap/anak/{induk}/disposisi', [RealisasiController::class, 'simpanDisposisi'])
             ->name('rekap.anak.disposisi');
+
+        Route::get('/admin/users/export-excel', [AdminController::class, 'exportUsersExcel'])
+            ->name('admin.users.export.excel');
+
     });
 
     // ============================================================
