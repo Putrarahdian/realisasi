@@ -609,8 +609,8 @@ class RealisasiController extends Controller
 
         // superuser wajib pilih bidang
         if (auth()->user()->role === 'superuser') {
-            $rules['induk.bidang_id'] = 'required|exists:bidangs,id';
-            $rules['induk.seksi_id'] = 'required|exists:seksis,id';
+            $rules['induk.bidang_id'] = 'required|exists:bidang,id';
+            $rules['induk.seksi_id'] = 'required|exists:seksi,id';
         }
 
         $validated = $request->validate($rules);

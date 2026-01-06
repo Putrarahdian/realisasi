@@ -17,6 +17,8 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
+    protected $table = 'pengguna';
+
     protected $fillable = [
         'name',
         'email',
@@ -26,17 +28,17 @@ class User extends Authenticatable
         'jabatan_id',
         'bidang_id',
         'seksi_id',
-
     ];
-        public function jabatan()
+
+    public function jabatan()
     {
         return $this->belongsTo(Jabatan::class, 'jabatan_id');
     }
-        public function bidang()
+    public function bidang()
     {
         return $this->belongsTo(Bidang::class, 'bidang_id');
     }
-        public function seksi()
+    public function seksi()
     {
         return $this->belongsTo(Seksi::class, 'seksi_id');
     }

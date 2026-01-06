@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Seksi extends Model
 {
     use HasFactory;
+    protected $table = 'seksi';
+    
     public function bidang()
     {
-        // return $this->hasMany(User::class);
         return $this->belongsTo(Bidang::class);
     }
 }

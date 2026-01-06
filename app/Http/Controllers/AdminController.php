@@ -48,32 +48,32 @@ class AdminController extends Controller
         $search = $request->input('search');
 
         $query = User::query()
-        ->leftjoin('jabatans', 'users.jabatan_id', '=', 'jabatans.id')
-        ->leftjoin('bidangs', 'users.bidang_id', '=', 'bidangs.id')
-        ->leftjoin('seksis', 'users.seksi_id', '=', 'seksis.id')
-        ->with(['jabatan', 'bidang', 'seksi'])
-        ->select('users.*');
+            ->leftJoin('jabatan', 'pengguna.jabatan_id', '=', 'jabatan.id')
+            ->leftJoin('bidang', 'pengguna.bidang_id', '=', 'bidang.id')
+            ->leftJoin('seksi', 'pengguna.seksi_id', '=', 'seksi.id')
+            ->with(['jabatan', 'bidang', 'seksi'])
+            ->select('pengguna.*');
 
         if (auth()->user()->role === 'admin') {
-            $query->where('users.bidang_id', auth()->user()->bidang_id);
+            $query->where('pengguna.bidang_id', auth()->user()->bidang_id);
         }
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
-                $q->where('users.name', 'like', "%{$search}%")
-                  ->orWhere('users.email', 'like', "%{$search}%")
-                  ->orWhere('users.nip', 'like', "%{$search}%")
+                $q->where('pengguna.name', 'like', "%{$search}%")
+                  ->orWhere('pengguna.email', 'like', "%{$search}%")
+                  ->orWhere('pengguna.nip', 'like', "%{$search}%")
                   ->orWhere(function($sub) use ($search) {
-                      $sub->whereNotNull('jabatans.id')
-                          ->where('jabatans.nama', 'like', "%{$search}%");
+                      $sub->whereNotNull('jabatan.id')
+                          ->where('jabatan.nama', 'like', "%{$search}%");
                   })
                   ->orWhere(function($sub) use ($search) {
-                      $sub->whereNotNull('bidangs.id')
-                          ->where('bidangs.nama', 'like', "%{$search}%");
+                      $sub->whereNotNull('bidang.id')
+                          ->where('bidang.nama', 'like', "%{$search}%");
                   })
                   ->orWhere(function($sub) use ($search) {
-                      $sub->whereNotNull('seksis.id')
-                          ->where('seksis.nama', 'like', "%{$search}%");
+                      $sub->whereNotNull('seksi.id')
+                          ->where('seksi.nama', 'like', "%{$search}%");
                   });
             });
         }
@@ -81,8 +81,8 @@ class AdminController extends Controller
         // Urutan prioritas jabatan dan role
         $users = $query
         ->orderByRaw("
-                FIELD(users.role, 'superuser', 'admin', 'user'),
-                FIELD(jabatans.nama, 
+                FIELD(pengguna.role, 'superuser', 'admin', 'user'),
+                FIELD(jabatan.nama, 
                     'Kepala Dinas',
                     'Sekretaris',
                     'Kepala Bidang',
@@ -90,7 +90,7 @@ class AdminController extends Controller
                     'Kasubag Umum dan Kepegawaian'
                 )
             ")
-            ->orderBy('users.name', 'asc')
+            ->orderBy('pengguna.name', 'asc')
             ->paginate(10)
             ->appends(['search' => $search]);
 
@@ -137,13 +137,13 @@ class AdminController extends Controller
         // ✅ Validasi dasar
         $request->validate([
             'name'     => 'required|string|max:100',
-            'email'    => 'required|email|max:255|unique:users,email',
+            'email'    => 'required|email|max:255|unique:pengguna,email',
             'password' => ['required', Password::defaults()],
             'role'     => 'required|in:user,admin,superuser',
-            'nip'      => 'required|string|max:20|unique:users,nip',
+            'nip'      => 'required|string|max:20|unique:pengguna,nip',
 
             // default: jabatan wajib (admin utama bukan lewat store biasanya, tapi tetap aman)
-            'jabatan_id' => 'required|exists:jabatans,id',
+            'jabatan_id' => 'required|exists:jabatan,id',
         ], $messages);
 
         // Admin hanya bisa menambah user dalam bidangnya
@@ -274,13 +274,13 @@ class AdminController extends Controller
         // ✅ Validasi dasar
         $request->validate([
             'name'     => 'required|string|max:100',
-            'email'    => 'required|email|max:255|unique:users,email,' . $user->id,
+            'email'    => 'required|email|max:255|unique:pengguna,email,' . $user->id,
             'role'     => 'required|in:user,admin,superuser',
             'password' => ['nullable', Password::defaults()],
-            'nip'      => 'required|string|max:20|unique:users,nip,' . $user->id,
+            'nip'      => 'required|string|max:20|unique:pengguna,nip,' . $user->id,
 
-            // ✅ master superuser boleh NULL jabatan
-            'jabatan_id' => $isMaster ? 'nullable' : 'required|exists:jabatans,id',
+            // master superuser boleh NULL jabatan
+            'jabatan_id' => $isMaster ? 'nullable' : 'required|exists:jabatan,id',
         ], $messages);
 
         // ✅ ADMIN UTAMA: tidak pakai jabatan/bidang/seksi
