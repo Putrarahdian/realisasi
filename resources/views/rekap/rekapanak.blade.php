@@ -388,7 +388,7 @@
           dan menjadi syarat untuk membuka akses download dokumen Word.
         </p>
 
-        <form action="{{ route('realisasi.rekap.anak.disposisi', $induk->id) }}" method="POST">
+        <form action="{{ route('rekap.anak.disposisi', $induk->id) }}" method="POST">
           @csrf
 
           <div class="mb-2">

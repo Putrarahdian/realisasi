@@ -160,15 +160,6 @@
                         name="sasaran[uraian]"
                         value="{{ $uraianSasaranDefault }}">
                 @endif
-
-                @if($noInt > 1)
-                  <small class="text-muted d-block mt-2">
-                    (Info) TW sebelumnya (TW{{ $prevNo }}): Target =
-                    <strong>{{ $prevTargetVal ?? '-' }}</strong>,
-                    Realisasi =
-                    <strong>{{ $prevRealisasiVal ?? '-' }}</strong>
-                  </small>
-                @endif
               </div>
 
               <div class="row">
@@ -181,9 +172,6 @@
                         min="0"
                         required>
                   @error('sasaran.target') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                  <small class="text-muted d-block mt-1">
-                    Isi target TW ini. Di rekap/show akan menjadi akumulasi total.
-                  </small>
                 </div>
 
                 <div class="col-md-6 mb-3">
@@ -195,9 +183,6 @@
                         min="0"
                         required>
                   @error('sasaran.realisasi') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                  <small class="text-muted d-block mt-1">
-                    Isi realisasi TW ini. Di rekap/show akan menjadi akumulasi total.
-                  </small>
                 </div>
               </div>
             </div>

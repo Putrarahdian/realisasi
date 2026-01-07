@@ -91,39 +91,39 @@
                         @endif
 
                         {{-- Tanggal dari - sampai --}}
-                        <div class="col-12 col-md-4">
-                            <label class="form-label fw-semibold mb-1">Range Tanggal</label>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold mb-1">Range Tanggal</label>
 
-                            {{-- input sejajar --}}
-                            <div class="d-flex gap-2 align-items-end">
-                                <input type="date"
-                                    name="tanggal_dari"
-                                    value="{{ request('tanggal_dari') }}"
-                                    class="form-control shadow-sm"
-                                    style="height:40px;">
+                    {{-- input sejajar --}}
+                    <div class="d-flex gap-2 align-items-end">
+                        <input type="date"
+                        name="tanggal_dari"
+                        value="{{ request('tanggal_dari') }}"
+                        class="form-control shadow-sm"
+                        style="height:40px;">
 
-                                <input type="date"
-                                    name="tanggal_sampai"
-                                    value="{{ request('tanggal_sampai') }}"
-                                    class="form-control shadow-sm"
-                                    style="height:40px;">
-                            </div>
+                        <input type="date"
+                        name="tanggal_sampai"
+                        value="{{ request('tanggal_sampai') }}"
+                        class="form-control shadow-sm"
+                        style="height:40px;">
+                    </div>
+
+                    {{-- Search --}}
+                    <div class="mt-2">
+                        <label class="form-label fw-semibold mb-1">Pencarian</label>
+                        <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white border-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text"
+                                name="search"
+                                value="{{ request('search') }}"
+                                class="form-control border-0"
+                                placeholder="Cari data...">
                         </div>
-
-                        {{-- Search --}}
-                        <div class="col-12 col-md-3">
-                            <label class="form-label fw-semibold mb-1">Pencarian</label>
-                            <div class="input-group shadow-sm">
-                                <span class="input-group-text bg-white border-0">
-                                    <i class="bi bi-search"></i>
-                                </span>
-                                <input type="text"
-                                       name="search"
-                                       value="{{ request('search') }}"
-                                       class="form-control border-0"
-                                       placeholder="Cari data...">
-                            </div>
-                        </div>
+                    </div>
+                    </div>
 
                         {{-- Tombol Terapkan --}}
                         <div class="col-12 col-md-2 d-grid">
@@ -215,27 +215,33 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <div class="btn-group" role="group">
+                                    <div class="btn-group btn-group-sm" role="group">
                                         <a href="{{ route('realisasi.show', $row->id) }}"
-                                           class="btn btn-sm btn-primary">
-                                            Detail
+                                        class="btn btn-primary">
+                                        Detail
                                         </a>
 
                                         <a href="{{ route('realisasi-induk.edit', $row->id) }}"
-                                           class="btn btn-sm btn-warning text-white">
-                                            Edit
+                                        class="btn btn-warning text-white">
+                                        Edit
                                         </a>
 
-                                        <form action="{{ route('realisasi-induk.destroy', $row->id) }}"
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="btn btn-sm btn-danger btn-delete">
-                                                Hapus
-                                            </button>
-                                        </form>
+                                        {{-- tombol jadi anak langsung btn-group --}}
+                                        <button type="submit"
+                                                form="delete-form-{{ $row->id }}"
+                                                class="btn btn-danger">
+                                        Hapus
+                                        </button>
                                     </div>
+
+                                {{-- form-nya dipisah (tidak ganggu bentuk btn-group) --}}
+                                <form id="delete-form-{{ $row->id }}"
+                                        action="{{ route('realisasi-induk.destroy', $row->id) }}"
+                                        method="POST"
+                                        class="d-none">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
                                 </td>
                             </tr>
                         @empty
