@@ -33,7 +33,8 @@ class RoleMiddleware
 
         // 🧩 Filter bidang otomatis untuk semua user selain superuser
         if ($user->role !== 'superuser' && !$isKasubag) {
-            $request->merge(['filter_bidang_id' => $user->bidang_id]);
+            $request->merge(['filter_bidang_id' => $user->bidang_id,
+            'filter_seksi_id' => $user->seksi_id]);
         }
 
         // Jika semua aman, lanjutkan ke halaman berikutnya

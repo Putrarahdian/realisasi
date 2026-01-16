@@ -7,6 +7,7 @@ use App\Http\Controllers\RealisasiController;
 use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\KeuanganController;
+use App\Http\Controllers\TargetController;
 
 // ===========================
 // 🌐 LANDING (publik)
@@ -74,6 +75,7 @@ Route::middleware('auth')->group(function () {
             });
 
     // 📊 REALISASI CRUD (utama)
+    Route::post('/realisasi', [RealisasiController::class, 'store'])->name('realisasi.store');
 
     Route::resource('realisasi', RealisasiController::class)->except(['destroy']);
 
@@ -122,4 +124,17 @@ Route::middleware('auth')->group(function () {
     // kasubag keuangan //
     Route::get('/keuangan', [KeuanganController::class, 'index'])
     ->name('keuangan.index');
+
+    // target kepala seksi //
+    Route::middleware(['auth', 'role:kepala_seksi,superuser'])->group(function () {
+        Route::get('/target', [TargetController::class, 'index'])->name('target.index');
+        Route::get('/target/create', [TargetController::class, 'create'])->name('target.create');
+        Route::post('/target', [TargetController::class, 'store'])->name('target.store');
+
+        Route::get('/target/{id}/edit', [TargetController::class, 'edit'])->name('target.edit');
+        Route::put('/target/{id}', [TargetController::class, 'update'])->name('target.update');
+
+        Route::delete('/target/{id}', [TargetController::class, 'destroy'])->name('target.destroy');
+    });
+
 });

@@ -16,6 +16,7 @@ use App\Models\RealisasiInduk;
 use App\Models\Bidang;
 use App\Models\Seksi;
 use App\Models\User;
+use App\Models\Target;
 
 class RealisasiController extends Controller
 {
@@ -350,6 +351,46 @@ class RealisasiController extends Controller
         ]);
     }
 
+    public function store(Request $request)
+    {
+        $this->forbidAdminOnKegiatan();
+        $this->authorizeEditData();
+
+        $user = auth()->user();
+
+        // 1) Validasi input form
+        $validated = $request->validate([
+            'target_id' => ['required', 'exists:target,id'],
+            'tahun'     => ['required', 'integer'],
+            'triwulan'  => ['required', 'integer', 'between:1,4'],
+            'output'    => ['required', 'string'],
+            'outcome'   => ['required', 'string'],
+            'sasaran'   => ['required', 'string'],
+        ]);
+
+        // 2) Kunci keamanan: pastikan target milik bidang+seksi user
+        $target = Target::where('id', $validated['target_id'])
+            ->where('bidang_id', $user->bidang_id)
+            ->where('seksi_id', $user->seksi_id)
+            ->firstOrFail();
+
+        // 3) Simpan ke tabel realisasi_induks
+        $realisasi = RealisasiInduk::create([
+            'target_id' => $target->id,
+            'tahun'     => $validated['tahun'],
+            'triwulan'  => $validated['triwulan'],
+            'output'    => $validated['output'],
+            'outcome'   => $validated['outcome'],
+            'sasaran'   => $validated['sasaran'],
+            'bidang_id' => $user->bidang_id,
+            'seksi_id'  => $user->seksi_id,
+            'user_id'   => $user->id,
+        ]);
+
+        // 4) Redirect ke halaman berikutnya
+        return redirect()->back()->with('success', 'Realisasi berhasil disimpan.');
+    }
+
     public function storeByTriwulan($no, RealisasiInduk $induk, Request $request)
     {
         $this->forbidAdminOnKegiatan();
@@ -585,7 +626,14 @@ class RealisasiController extends Controller
         $this->forbidAdminOnKegiatan();
         $this->authorizeEditData();
 
-        return view('realisasi.create');
+        $user = auth()->user();
+
+        $targets = Target::where('bidang_id', $user->bidang_id)
+            ->where('seksi_id', $user->seksi_id)
+            ->orderBy('tahun', 'desc')
+            ->get();
+
+        return view('realisasi.create', compact('targets'));
     }
 
     public function storeInduk(Request $request)

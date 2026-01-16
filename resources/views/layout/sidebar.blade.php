@@ -23,15 +23,23 @@
         </a>
       </li>
 
-    {{-- 🏠 Menu Home --}}
+    {{--  Menu Home --}}
     @else
     <li class="{{ request()->is('/') ? 'active' : '' }}">
       <a href="{{ url('/') }}" class="dashboard">
         <i class="material-icons">house</i> Home
       </a>
     </li>
+    
+    @if(auth()->check() && in_array(auth()->user()->role, ['superuser', 'kepala_seksi']))
+      <li class="{{ request()->is('target*') ? 'active' : '' }}">
+        <a href="{{ route('target.index') }}">
+          <i class="material-icons">flag</i> Target
+        </a>
+      </li>
+    @endif
 
-    {{-- 📊 Menu Kegiatan - bisa diakses semua yang login kecuali admin --}}
+    {{--  Menu Kegiatan - bisa diakses semua yang login kecuali admin --}}
     <li class="{{ request()->routeIs('realisasi.index','realisasi.create','realisasi.edit','realisasi.show') ? 'active' : '' }}">
       <a href="{{ route('realisasi.index') }}">
         <i class="material-icons">grid_on</i> Kegiatan
@@ -74,9 +82,8 @@
           </li>
         @endif
 
-
-    {{-- 🧑‍💼 Menu khusus Superuser/Admin --}}
-    @if(in_array(Auth()->user()->role, ['superuser','admin']))
+    {{--  Menu khusus Superuser --}}
+    @if(in_array(Auth()->user()->role, ['superuser']))
       <li class="{{ request()->is('admin/menu*') ? 'active' : '' }}">
         <a href="{{ route('admin.menu') }}">
           <i class="material-icons">admin_panel_settings</i> User
