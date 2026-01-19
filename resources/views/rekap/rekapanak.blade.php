@@ -10,7 +10,7 @@
         </h5>
         <small class="text-muted">
           Tahun {{ $induk->tahun }} |
-          Sasaran: {{ $induk->sasaran_strategis }}
+          Judul: {{ optional($induk->targetHeader)->judul ?? '-' }}
         </small>
       </div>
 
@@ -36,9 +36,9 @@
 
       {{-- INFO RINGKAS --}}
       <div class="mb-3">
-        <p class="mb-1"><strong>Program / Kegiatan:</strong> {{ $induk->program }}</p>
-        <p class="mb-1"><strong>Indikator:</strong> {{ $induk->indikator }}</p>
-        <p class="mb-1"><strong>Target:</strong> {{ $induk->target }}</p>
+        <p class="mb-1"><strong>Output:</strong> {{ $induk->output ?? '-' }}</p>
+        <p class="mb-1"><strong>Outcome:</strong> {{ $induk->outcome ?? '-' }}</p>
+        <p class="mb-1"><strong>Sasaran:</strong> {{ $induk->sasaran ?? '-' }}</p>
       </div>
 
     {{-- ===========================

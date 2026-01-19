@@ -17,6 +17,44 @@
     <form action="{{ route('target.store') }}" method="POST">
         @csrf
 
+        @if(auth()->user()->role === 'superuser')
+        <div class="row">
+            <div class="col-md-6 mb-3">
+            <label class="form-label">Bidang</label>
+            <select id="bidangSelect"
+                    name="bidang_id"
+                    class="form-select"
+                    required>
+                <option value="">-- Pilih Bidang --</option>
+                    @foreach($bidangs as $bidang)
+                    <option value="{{ $bidang->id }}"
+                        {{ old('bidang_id') == $bidang->id ? 'selected' : '' }}>
+                        {{ $bidang->nama }}
+                    </option>
+                    @endforeach
+            </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+            <label class="form-label">Seksi</label>
+            <select id="seksiSelect"
+                    name="seksi_id"
+                    class="form-select"
+                    disabled
+                    required>
+                <option value="">-- Pilih Seksi --</option>
+                    @foreach($seksis as $seksi)
+                    <option value="{{ $seksi->id }}"
+                            data-bidang="{{ $seksi->bidang_id }}"
+                            {{ old('seksi_id') == $seksi->id ? 'selected' : '' }}>
+                        {{ $seksi->nama }}
+                    </option>
+                    @endforeach
+            </select>
+            </div>
+        </div>
+        @endif
+
         <div class="mb-3">
             <label class="form-label">Tahun</label>
             <input type="number" name="tahun" class="form-control"
@@ -81,4 +119,69 @@
         </div>
     </form>
 </div>
+
+@if(auth()->user()->role === 'superuser')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const bidangSelect = document.getElementById('bidangSelect');
+    const seksiSelect  = document.getElementById('seksiSelect');
+    if (!bidangSelect || !seksiSelect) return;
+
+    const allSeksiOptions = Array.from(seksiSelect.options);
+    const oldBidangId = "{{ old('bidang_id') }}";
+    const oldSeksiId  = "{{ old('seksi_id') }}";
+
+    function applyFilter() {
+        const bidangId = bidangSelect.value;
+
+        if (!bidangId) {
+            seksiSelect.value = '';
+            seksiSelect.disabled = true;
+
+            allSeksiOptions.forEach((opt, index) => {
+                if (index === 0) {
+                    opt.hidden = false;
+                    opt.disabled = false;
+                } else {
+                    opt.hidden = true;
+                    opt.disabled = true;
+                }
+            });
+            return;
+        }
+
+        seksiSelect.disabled = false;
+
+        allSeksiOptions.forEach((opt, index) => {
+            if (index === 0) {
+                opt.hidden = false;
+                opt.disabled = false;
+                return;
+            }
+
+            const cocok = opt.dataset.bidang === bidangId;
+            opt.hidden = !cocok;
+            opt.disabled = !cocok;
+        });
+    }
+
+    // init load
+    if (oldBidangId) bidangSelect.value = oldBidangId;
+    applyFilter();
+
+    // set old seksi kalau masih cocok
+    if (oldBidangId && oldSeksiId) {
+        const opt = allSeksiOptions.find(o => o.value === oldSeksiId && o.dataset.bidang === oldBidangId);
+        seksiSelect.value = opt ? oldSeksiId : '';
+    }
+
+    // bidang berubah → reset seksi + filter ulang
+    bidangSelect.addEventListener('change', function () {
+        seksiSelect.value = '';
+        applyFilter();
+    });
+});
+</script>
+@endif
+
 @endsection

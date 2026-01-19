@@ -180,20 +180,23 @@ class RealisasiController extends Controller
             $query->whereDate('tanggal', '<=', $tanggalSampai);
         }
 
-
         if ($request->filled('search')) {
             $search = $request->input('search');
+
             $query->where(function ($q) use ($search) {
-                $q->where('sasaran_strategis', 'like', "%{$search}%")
-                    ->orWhere('program', 'like', "%{$search}%")
-                    ->orWhere('indikator', 'like', "%{$search}%")
-                    ->orWhere('target', 'like', "%{$search}%")
-                    ->orWhere('hambatan', 'like', "%{$search}%")
-                    ->orWhere('rekomendasi', 'like', "%{$search}%")
-                    ->orWhere('tindak_lanjut', 'like', "%{$search}%")
-                    ->orWhere('dokumen', 'like', "%{$search}%")
-                    ->orWhere('strategi', 'like', "%{$search}%")
-                    ->orWhere('alasan', 'like', "%{$search}%");
+
+                $q->whereHas('targetHeader', function ($qt) use ($search) {
+                    $qt->where('judul', 'like', "%{$search}%");
+                })
+
+                ->orWhere('output', 'like', "%{$search}%")
+                ->orWhere('outcome', 'like', "%{$search}%")
+                ->orWhere('sasaran', 'like', "%{$search}%")
+                ->orWhere('tahun', 'like', "%{$search}%")
+
+                ->orWhereHas('seksi', function ($qs) use ($search) {
+                    $qs->where('nama', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -610,15 +613,31 @@ class RealisasiController extends Controller
         $this->forbidAdminOnKegiatan();
         $this->authorizeEditData();
 
-        $bidangs = [];
-        $seksis = [];
+        $user = auth()->user();
 
-        if (auth()->user()->role === 'superuser') {
+        $usedTargetIds = RealisasiInduk::whereNotNull('target_id')->pluck('target_id');
+
+        $bidangs = [];
+        $seksis  = [];
+
+        if ($user->role === 'superuser') {
             $bidangs = Bidang::orderBy('nama')->get();
-            $seksis = Seksi::with('bidang')->orderBy('nama')->get();
+            $seksis  = Seksi::with('bidang')->orderBy('nama')->get();
+
+            $targets = Target::whereNotIn('id', $usedTargetIds)
+                ->orderBy('tahun','desc')
+                ->orderBy('id','desc')
+                ->get();
+        } else {
+            $targets = Target::where('bidang_id', $user->bidang_id)
+                ->where('seksi_id', $user->seksi_id)
+                ->whereNotIn('id', $usedTargetIds)
+                ->orderBy('tahun','desc')
+                ->orderBy('id','desc')
+                ->get();
         }
 
-        return view('realisasi_induk.create', compact('bidangs','seksis'));
+        return view('realisasi_induk.create', compact('bidangs','seksis','targets'));
     }
 
     public function create()
@@ -642,55 +661,60 @@ class RealisasiController extends Controller
         $this->authorizeEditData();
 
         $rules = [
-            'induk.tanggal'           => 'required|date',
-            'induk.sasaran_strategis' => 'required|string',
-            'induk.program'           => 'required|string',
-            'induk.indikator'         => 'required|string',
-            'induk.target'            => 'required|string',
-            'induk.hambatan'          => 'required|string',
-            'induk.rekomendasi'       => 'required|string',
-            'induk.tindak_lanjut'     => 'required|string',
-            'induk.dokumen'           => 'required|string',
-            'induk.strategi'          => 'required|string',
-            'induk.alasan'            => 'required|string',
+            'induk.tanggal'   => 'required|date',
+            'induk.tahun'     => 'required|integer',
+            'induk.target_id' => 'required|exists:target,id',
+            'induk.output'    => 'required|string',
+            'induk.outcome'   => 'required|string',
+            'induk.sasaran'   => 'required|string',
         ];
 
-        // superuser wajib pilih bidang
+        // superuser wajib pilih bidang & seksi
         if (auth()->user()->role === 'superuser') {
             $rules['induk.bidang_id'] = 'required|exists:bidang,id';
-            $rules['induk.seksi_id'] = 'required|exists:seksi,id';
+            $rules['induk.seksi_id']  = 'required|exists:seksi,id';
         }
 
         $validated = $request->validate($rules);
         $data      = $validated['induk'];
-        $tanggal   = $data['tanggal'];
-        $tahun     = \Carbon\Carbon::parse($tanggal)->year;
 
-        // tentukan bidang_id
-        if (auth()->user()->role === 'superuser') {
-            $bidangId = $data['bidang_id'];
-            $seksiId = $data['seksi_id'];
-        } else {
-            $bidangId = auth()->user()->bidang_id;
-            $seksiId = auth()->user()->seksi_id;
-        }
         $user = auth()->user();
 
+        // tentukan bidang_id & seksi_id
+        if ($user->role === 'superuser') {
+            $bidangId = $data['bidang_id'];
+            $seksiId  = $data['seksi_id'];
+        } else {
+            $bidangId = $user->bidang_id;
+            $seksiId  = $user->seksi_id;
+        }
+
+        $targetQuery = Target::where('id', $data['target_id']);
+        if ($user->role !== 'superuser') {
+            $targetQuery->where('bidang_id', $bidangId)
+                        ->where('seksi_id', $seksiId);
+        }
+        $target = $targetQuery->firstOrFail();
+
+        $tahun = (int) $data['tahun'];
+        $alreadyUsed = RealisasiInduk::where('target_id', $target->id)->exists();
+            if ($alreadyUsed) {
+                return back()
+                    ->withErrors(['induk.target_id' => 'Target ini sudah dipakai pada Data Induk lain. Silakan pilih target lain.'])
+                    ->withInput();
+            }
+
         $induk = RealisasiInduk::create([
-            'tanggal'           => $tanggal,
-            'tahun'             => $tahun,
-            'bidang_id'         => $bidangId,
-            'seksi_id'          => $seksiId,
-            'sasaran_strategis' => $data['sasaran_strategis'],
-            'program'           => $data['program'],
-            'indikator'         => $data['indikator'],
-            'target'            => $data['target'],
-            'hambatan'          => $data['hambatan'],
-            'rekomendasi'       => $data['rekomendasi'],
-            'tindak_lanjut'     => $data['tindak_lanjut'],
-            'dokumen'           => $data['dokumen'],
-            'strategi'          => $data['strategi'],
-            'alasan'            => $data['alasan'],
+            'tanggal'   => $data['tanggal'],
+            'tahun'     => $tahun,
+            'bidang_id' => $bidangId,
+            'seksi_id'  => $seksiId,
+            'user_id'   => $user->id,
+
+            'target_id' => $target->id,
+            'output'    => $data['output'],
+            'outcome'   => $data['outcome'],
+            'sasaran'   => $data['sasaran'],
         ]);
 
         return redirect()->route('realisasi.index')
@@ -1016,7 +1040,7 @@ class RealisasiController extends Controller
             'outcomes',
             'keuangans',
             'keberhasilan',
-            'sasaran',
+            'sasaranDetail',
         ])->findOrFail($id);
 
         // baru cek otorisasinya
@@ -1172,7 +1196,7 @@ class RealisasiController extends Controller
             'outcomes',
             'keuangans',
             'keberhasilan',
-            'sasaran',
+            'sasaranDetail',
         ]);
 
         // Batasi sesuai bidang

@@ -162,45 +162,62 @@
                     <thead class="table-light text-center">
                         <tr>
                             <th style="width: 50px;">No</th>
-                            <th>Tahun</th>
+                            <th style="width: 90px;">Tahun</th>
                             <th>Bidang</th>
                             <th>Seksi</th>
-                            <th>Sasaran Strategis</th>
-                            <th>Program / Kegiatan</th>
-                            <th>Indikator</th>
-                            <th>Hambatan / Keberhasilan</th>
-                            <th>Rekomendasi</th>
+                            <th style="min-width: 260px;">Judul (Target)</th>
+                            <th style="min-width: 220px;">Output</th>
+                            <th style="min-width: 220px;">Outcome</th>
+                            <th style="min-width: 220px;">Sasaran</th>
                             <th style="width: 110px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($data_induk as $i => $row)
-                            <tr>
-                                <td class="text-center fw-semibold">
-                                    {{ $data_induk->firstItem() + $i }}
-                                </td>
-                                <td class="text-center fw-semibold text-primary">
-                                    {{ $row->tahun }}
-                                </td>
-                                <td>
-                                    {{ optional($row->bidang)->nama ?? '-' }}
-                                </td>
-                                <td>
-                                    {{ optional($row->seksi)->nama ?? '-' }}
-                                </td>
-                                <td>{{ Str::limit($row->sasaran_strategis, 60) }}</td>
-                                <td>{{ Str::limit($row->program, 60) }}</td>
-                                <td>{{ Str::limit($row->indikator, 60) }}</td>
-                                <td>{{ Str::limit($row->hambatan, 60) }}</td>
-                                <td>{{ Str::limit($row->rekomendasi, 60) }}</td>
-                                <td class="text-center">
-                                    {{-- Detail: ke halaman laporan realisasi kegiatan (show) --}}
-                                    <a href="{{ route('rekap.anak', $row->id) }}"
-                                       class="btn btn-sm btn-primary shadow-sm">
-                                        Detail
-                                    </a>
-                                </td>
-                            </tr>
+                        <tr>
+                            <td class="text-center fw-semibold">
+                                {{ $data_induk->firstItem() + $i }}
+                            </td>
+
+                            <td class="text-center fw-semibold text-primary">
+                                {{ $row->tahun }}
+                            </td>
+
+                            <td>
+                                {{ optional($row->bidang)->nama ?? '-' }}
+                            </td>
+
+                            <td>
+                                {{ optional($row->seksi)->nama ?? '-' }}
+                            </td>
+
+                            <td title="{{ optional($row->targetHeader)->judul ?? '-' }}">
+                                {{ \Illuminate\Support\Str::limit(optional($row->targetHeader)->judul ?? '-', 60) }}
+                            </td>
+
+                            <td title="{{ $row->output ?? '-' }}">
+                                {{ \Illuminate\Support\Str::limit($row->output ?? '-', 60) }}
+                            </td>
+
+                            <td title="{{ $row->outcome ?? '-' }}">
+                                {{ \Illuminate\Support\Str::limit($row->outcome ?? '-', 60) }}
+                            </td>
+
+                            <td title="{{ $row->sasaran ?? '-' }}">
+                                {{ \Illuminate\Support\Str::limit($row->sasaran ?? '-', 60) }}
+                            </td>
+
+                            <td class="text-center">
+                                {{-- Kalau tombol detail kamu masih error, matikan dulu --}}
+                                {{-- <a href="#" class="btn btn-sm btn-primary shadow-sm disabled">Detail</a> --}}
+
+                                {{-- Kalau route detail kamu sudah benar, pakai ini (sesuaikan jika berbeda) --}}
+                                <a href="{{ route('rekap.anak', $row->id) }}"
+                                class="btn btn-sm btn-primary shadow-sm">
+                                    Detail
+                                </a>
+                            </td>
+                        </tr>
                         @empty
                             <tr>
                                 <td colspan="9" class="text-center text-muted py-3">

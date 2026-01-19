@@ -26,7 +26,6 @@ class RealisasiExport implements
     protected Collection $data;
     protected string $judulTriwulan;
 
-    // 🔹 Bisa kirim teks judul triwulan dari controller (opsional)
     public function __construct(Collection $data, string $judulTriwulan = 'TRIWULAN I')
     {
         $this->data          = $data;
@@ -38,37 +37,25 @@ class RealisasiExport implements
         return $this->data;
     }
 
-    /**
-     * 🔹 Data tabel mulai dari sel A5
-     */
+    // Data tabel mulai dari A5
     public function startCell(): string
     {
         return 'A5';
     }
 
-    /**
-     * 🔹 Header tabel (baris ke-5)
-     */
+    // Header tabel (baris 5)
     public function headings(): array
     {
         return [
             'NO.',
-            'SASARAN STRATEGIS',
-            'PROGRAM/KEGIATAN/SUB KEGIATAN',
-            'INDIKATOR PROG/KEG/SUB KEG',
-            'Target',
-            'HAMBATAN/KEBERHASILAN',
-            'REKOMENDASI',
-            'TL REKOMENDASI SEBELUMNYA',
-            'NAMA DOKUMEN/DATA KINERJA',
-            'STRATEGI YANG AKAN DILAKUKAN TRIWULAN BERIKUTNYA',
-            'ALASAN TIDAK TERCAPAI',
+            'JUDUL (TARGET)',
+            'OUTPUT',
+            'OUTCOME',
+            'SASARAN',
         ];
     }
 
-    /**
-     * 🔹 Urutan data mengikuti headings() di atas
-     */
+    // Mapping data sesuai header
     public function map($row): array
     {
         static $no = 0;
@@ -76,72 +63,53 @@ class RealisasiExport implements
 
         return [
             $no,
-            $row->sasaran_strategis,
-            $row->program,
-            $row->indikator,
-            $row->target,
-            $row->hambatan,
-            $row->rekomendasi,
-            $row->tindak_lanjut,
-            $row->dokumen,
-            $row->strategi,
-            $row->alasan,
+            optional($row->targetHeader)->judul ?? '-', // judul utama dari target
+            $row->output ?? '-',
+            $row->outcome ?? '-',
+            $row->sasaran ?? '-',
         ];
     }
 
-    /**
-     * 🔹 Atur lebar kolom
-     */
+    // Lebar kolom
     public function columnWidths(): array
     {
         return [
             'A' => 5,   // No.
-            'B' => 30,  // Sasaran
-            'C' => 28,  // Program
-            'D' => 25,  // Indikator
-            'E' => 12,  // Target
-            'F' => 25,  // Hambatan/Keberhasilan
-            'G' => 25,  // Rekomendasi
-            'H' => 25,  // TL Rekomendasi
-            'I' => 25,  // Dokumen
-            'J' => 28,  // Strategi
-            'K' => 25,  // Alasan
+            'B' => 45,  // Judul target
+            'C' => 35,  // Output
+            'D' => 35,  // Outcome
+            'E' => 35,  // Sasaran
         ];
     }
 
-    /**
-     * 🔹 Style tabel (border, align, wrap)
-     */
+    // Style tabel
     public function styles(Worksheet $sheet)
     {
-        // baris data terakhir (data mulai baris 6)
-        $lastRow = $this->data->count() + 5;
+        $lastRow = $this->data->count() + 5; // data mulai row 6, header di row 5
 
-        // Header tabel (baris 5) bold + center
-        $sheet->getStyle('A5:K5')->getFont()->setBold(true);
-        $sheet->getStyle('A5:K5')->getAlignment()
+        // Header bold + center
+        $sheet->getStyle('A5:E5')->getFont()->setBold(true);
+        $sheet->getStyle('A5:E5')->getAlignment()
             ->setHorizontal('center')
             ->setVertical('center');
 
-        // Kolom No rata tengah
+        // Kolom No center
         $sheet->getStyle("A6:A{$lastRow}")->getAlignment()
             ->setHorizontal('center');
 
-        // Wrap text untuk kolom teks panjang
-        $sheet->getStyle("B5:K{$lastRow}")
+        // Wrap text kolom teks
+        $sheet->getStyle("B5:E{$lastRow}")
             ->getAlignment()->setWrapText(true);
 
-        // Border semua area mulai row4 (nomor 1-11) sampai data terakhir
-        $sheet->getStyle("A4:K{$lastRow}")
+        // Border area tabel (mulai row4 nomor kolom sampai data terakhir)
+        $sheet->getStyle("A4:E{$lastRow}")
             ->getBorders()->getAllBorders()
             ->setBorderStyle(Border::BORDER_THIN);
 
         return [];
     }
 
-    /**
-     * 🔹 Set judul di baris 1-3 + baris nomor 1-11 di baris 4
-     */
+    // Judul sheet + baris nomor kolom (row 4)
     public function registerEvents(): array
     {
         return [
@@ -151,10 +119,10 @@ class RealisasiExport implements
 
                 $tahun = optional($this->data->first())->tahun ?? '';
 
-                // Judul baris 1–3 (merge A1:K1, A2:K2, A3:K3)
-                $sheet->mergeCells('A1:K1');
-                $sheet->mergeCells('A2:K2');
-                $sheet->mergeCells('A3:K3');
+                // merge judul A1:E1, A2:E2, A3:E3
+                $sheet->mergeCells('A1:E1');
+                $sheet->mergeCells('A2:E2');
+                $sheet->mergeCells('A3:E3');
 
                 $sheet->setCellValue('A1', "KERTAS KERJA MONITORING KINERJA {$this->judulTriwulan}");
                 $sheet->setCellValue('A2', 'DINAS KOMUNIKASI DAN INFORMATIKA KOTA BANJARBARU');
@@ -169,16 +137,16 @@ class RealisasiExport implements
                 $sheet->getRowDimension(2)->setRowHeight(20);
                 $sheet->getRowDimension(3)->setRowHeight(18);
 
-                // Baris nomor 1–11 di row 4
-                $numbers = range(1, 11); // 1..11
+                // Baris nomor kolom di row 4: 1..5 (A..E)
+                $numbers = range(1, 5);
                 $col     = 'A';
                 foreach ($numbers as $num) {
                     $sheet->setCellValue($col.'4', $num);
                     $col++;
                 }
 
-                $sheet->getStyle('A4:K4')->getFont()->setBold(true);
-                $sheet->getStyle('A4:K4')->getAlignment()
+                $sheet->getStyle('A4:E4')->getFont()->setBold(true);
+                $sheet->getStyle('A4:E4')->getAlignment()
                     ->setHorizontal('center')
                     ->setVertical('center');
             },

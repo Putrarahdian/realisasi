@@ -56,16 +56,15 @@
 
             {{-- ================= FILTER BAR ================= --}}
             <form method="GET" action="{{ route('realisasi.index') }}" class="mb-4">
-                <div class="p-3 rounded-3 p-3 mb-4">
-                    <div class="row g-3 align-items-end">
+                <div class="p-3 rounded-3 mb-4">
 
-                        {{-- Bidang & Seksi (Superuser) --}}
+                    {{-- ROW 1: Bidang, Seksi, Range Tanggal --}}
+                    <div class="row g-3 align-items-end mb-3">
+
                         @if(auth()->user()->role === 'superuser')
                             <div class="col-12 col-md-3">
                                 <label class="form-label fw-semibold mb-1">Bidang</label>
-                                <select name="bidang_id"
-                                        class="form-select shadow-sm"
-                                        onchange="this.form.submit()">
+                                <select name="bidang_id" class="form-select shadow-sm" onchange="this.form.submit()">
                                     <option value="">Semua Bidang</option>
                                     @foreach($bidangs as $b)
                                         <option value="{{ $b->id }}" {{ request('bidang_id') == $b->id ? 'selected' : '' }}>
@@ -77,9 +76,7 @@
 
                             <div class="col-12 col-md-3">
                                 <label class="form-label fw-semibold mb-1">Seksi</label>
-                                <select name="seksi_id"
-                                        class="form-select shadow-sm"
-                                        onchange="this.form.submit()">
+                                <select name="seksi_id" class="form-select shadow-sm" onchange="this.form.submit()">
                                     <option value="">Semua Seksi</option>
                                     @foreach($seksis as $s)
                                         <option value="{{ $s->id }}" {{ request('seksi_id') == $s->id ? 'selected' : '' }}>
@@ -90,49 +87,51 @@
                             </div>
                         @endif
 
-                        {{-- Tanggal dari - sampai --}}
-                    <div class="col-12 col-md-4">
-                        <label class="form-label fw-semibold mb-1">Range Tanggal</label>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold mb-1">Range Tanggal</label>
+                            <div class="d-flex gap-2">
+                                <input type="date"
+                                    name="tanggal_dari"
+                                    value="{{ request('tanggal_dari') }}"
+                                    class="form-control shadow-sm"
+                                    style="height:40px;">
 
-                    {{-- input sejajar --}}
-                    <div class="d-flex gap-2 align-items-end">
-                        <input type="date"
-                        name="tanggal_dari"
-                        value="{{ request('tanggal_dari') }}"
-                        class="form-control shadow-sm"
-                        style="height:40px;">
-
-                        <input type="date"
-                        name="tanggal_sampai"
-                        value="{{ request('tanggal_sampai') }}"
-                        class="form-control shadow-sm"
-                        style="height:40px;">
-                    </div>
-
-                    {{-- Search --}}
-                    <div class="mt-2">
-                        <label class="form-label fw-semibold mb-1">Pencarian</label>
-                        <div class="input-group shadow-sm">
-                        <span class="input-group-text bg-white border-0">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text"
-                                name="search"
-                                value="{{ request('search') }}"
-                                class="form-control border-0"
-                                placeholder="Cari data...">
+                                <input type="date"
+                                    name="tanggal_sampai"
+                                    value="{{ request('tanggal_sampai') }}"
+                                    class="form-control shadow-sm"
+                                    style="height:40px;">
+                            </div>
                         </div>
                     </div>
-                    </div>
+
+                    {{-- ROW 2: Search + Terapkan (sejajar) --}}
+                    <div class="row g-3 align-items-end">
+
+                        {{-- Search (panjang) --}}
+                        <div class="col-12 col-md-10">
+                            <label class="form-label fw-semibold mb-1">Pencarian</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white border-0">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text"
+                                    name="search"
+                                    value="{{ request('search') }}"
+                                    class="form-control border-0"
+                                    placeholder="Cari data..."
+                                    style="height:40px;">
+                            </div>
+                        </div>
 
                         {{-- Tombol Terapkan --}}
                         <div class="col-12 col-md-2 d-grid">
-                            <button type="submit" class="btn btn-primary shadow-sm">
+                            <button type="submit" class="btn btn-primary shadow-sm" style="height:40px;">
                                 <i class="bi bi-funnel me-1"></i> Terapkan
                             </button>
                         </div>
-
                     </div>
+
                 </div>
             </form>
 
@@ -140,109 +139,77 @@
             <div class="table-responsive rounded-4 border shadow-sm">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light text-center align-middle">
-                        <tr>
-                            <th style="width:60px;">No</th>
-                            <th style="width:120px;">Tanggal</th>
-                            <th style="width:180px;">Seksi</th>
-                            <th style="min-width:240px;">Sasaran Strategis</th>
-                            <th style="min-width:260px;">Program/Kegiatan/Sub Kegiatan</th>
-                            <th style="min-width:260px;">Indikator Prog/Keg/Sub Keg</th>
-                            <th style="min-width:180px;">Target</th>
-                            <th style="min-width:220px;">Hambatan/Keberhasilan</th>
-                            <th style="min-width:200px;">Rekomendasi</th>
-                            <th style="min-width:240px;">TL Rekomendasi Sebelumnya</th>
-                            <th style="min-width:220px;">Nama Dokumen/Data Kinerja</th>
-                            <th style="min-width:240px;">Strategi Triwulan Berikutnya</th>
-                            <th style="min-width:220px;">Alasan Tidak Tercapai</th>
-                            <th style="width:170px;">Aksi</th>
-                        </tr>
+                    <tr>
+                        <th style="width:60px;">No</th>
+                        <th style="width:120px;">Tanggal</th>
+                        <th style="width:180px;">Seksi</th>
+                        <th style="min-width:320px;">Judul (Target)</th>
+                        <th style="min-width:320px;">Output</th>
+                        <th style="min-width:320px;">Outcome</th>
+                        <th style="min-width:320px;">Sasaran</th>
+                        <th style="width:170px;">Aksi</th>
+                    </tr>
                     </thead>
 
                     <tbody>
                         @forelse ($data_induk as $i => $row)
                             <tr>
-                                <td class="text-center fw-semibold">
-                                    {{ $data_induk->firstItem() + $i }}
-                                </td>
+                            <td class="text-center fw-semibold">
+                                {{ $data_induk->firstItem() + $i }}
+                            </td>
 
-                                <td class="text-center fw-semibold text-primary">
-                                    {{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('d-m-Y') : '-' }}
-                                </td>
+                            <td class="text-center fw-semibold text-primary">
+                                {{ $row->tanggal ? \Carbon\Carbon::parse($row->tanggal)->format('d-m-Y') : '-' }}
+                            </td>
 
-                                <td>
-                                    <span class="fw-semibold">{{ $row->seksi->nama ?? '-' }}</span>
-                                </td>
+                            <td>
+                                <span class="fw-semibold">{{ $row->seksi->nama ?? '-' }}</span>
+                            </td>
 
-                                {{-- Helper: truncate + tooltip --}}
-                                <td title="{{ $row->sasaran_strategis }}" class="text-truncate" style="max-width: 260px;">
-                                    {{ $row->sasaran_strategis }}
-                                </td>
+                            {{-- Judul utama dari Target --}}
+                            <td title="{{ optional($row->targetHeader)->judul }}" class="text-truncate" style="max-width: 360px;">
+                                {{ optional($row->targetHeader)->judul ?? '-' }}
+                            </td>
 
-                                <td title="{{ $row->program }}" class="text-truncate" style="max-width: 280px;">
-                                    {{ $row->program }}
-                                </td>
+                            {{-- 3 subjudul baru dari realisasi_induks --}}
+                            <td title="{{ $row->output }}" class="text-truncate" style="max-width: 360px;">
+                                {{ $row->output ?? '-' }}
+                            </td>
 
-                                <td title="{{ $row->indikator }}" class="text-truncate" style="max-width: 280px;">
-                                    {{ $row->indikator }}
-                                </td>
+                            <td title="{{ $row->outcome }}" class="text-truncate" style="max-width: 360px;">
+                                {{ $row->outcome ?? '-' }}
+                            </td>
 
-                                <td title="{{ $row->target }}" class="text-truncate" style="max-width: 220px;">
-                                    {{ $row->target }}
-                                </td>
+                            <td title="{{ $row->sasaran }}" class="text-truncate" style="max-width: 360px;">
+                                {{ $row->sasaran ?? '-' }}
+                            </td>
 
-                                <td title="{{ $row->hambatan }}" class="text-truncate" style="max-width: 260px;">
-                                    {{ $row->hambatan }}
-                                </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
 
-                                <td title="{{ $row->rekomendasi }}" class="text-truncate" style="max-width: 240px;">
-                                    {{ $row->rekomendasi }}
-                                </td>
+                                {{-- OPSI 1 (sementara): detail dimatikan dulu biar gak error --}}
+                                {{-- <a href="#" class="btn btn-primary disabled">Detail</a> --}}
 
-                                <td title="{{ $row->tindak_lanjut }}" class="text-truncate" style="max-width: 280px;">
-                                    {{ $row->tindak_lanjut }}
-                                </td>
+                                {{-- OPSI 2 (kalau kamu mau bikin detail induk): aktifkan setelah route show ada --}}
+                                <a href="{{ route('realisasi.show', $row->id) }}" class="btn btn-primary">Detail</a>
 
-                                <td title="{{ $row->dokumen }}" class="text-truncate" style="max-width: 260px;">
-                                    {{ $row->dokumen }}
-                                </td>
+                                <a href="{{ route('realisasi-induk.edit', $row->id) }}" class="btn btn-warning text-white">
+                                    Edit
+                                </a>
 
-                                <td title="{{ $row->strategi }}" class="text-truncate" style="max-width: 280px;">
-                                    {{ $row->strategi }}
-                                </td>
+                                <button type="submit" form="delete-form-{{ $row->id }}" class="btn btn-danger">
+                                    Hapus
+                                </button>
+                                </div>
 
-                                <td title="{{ $row->alasan }}" class="text-truncate" style="max-width: 260px;">
-                                    {{ $row->alasan }}
-                                </td>
-
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('realisasi.show', $row->id) }}"
-                                        class="btn btn-primary">
-                                        Detail
-                                        </a>
-
-                                        <a href="{{ route('realisasi-induk.edit', $row->id) }}"
-                                        class="btn btn-warning text-white">
-                                        Edit
-                                        </a>
-
-                                        {{-- tombol jadi anak langsung btn-group --}}
-                                        <button type="submit"
-                                                form="delete-form-{{ $row->id }}"
-                                                class="btn btn-danger">
-                                        Hapus
-                                        </button>
-                                    </div>
-
-                                {{-- form-nya dipisah (tidak ganggu bentuk btn-group) --}}
                                 <form id="delete-form-{{ $row->id }}"
-                                        action="{{ route('realisasi-induk.destroy', $row->id) }}"
-                                        method="POST"
-                                        class="d-none">
-                                    @csrf
-                                    @method('DELETE')
+                                    action="{{ route('realisasi-induk.destroy', $row->id) }}"
+                                    method="POST"
+                                    class="d-none">
+                                @csrf
+                                @method('DELETE')
                                 </form>
-                                </td>
+                            </td>
                             </tr>
                         @empty
                             <tr>

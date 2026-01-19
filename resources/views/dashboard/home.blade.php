@@ -33,7 +33,7 @@
             <form method="GET" action="{{ route('home') }}" class="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
                 {{-- Dropdown bidang: hanya tampil untuk superuser & Kadis --}}
                 @if(in_array($user->role, ['superuser']) && !empty($bidangs) && empty($user->bidang_id))
-                    <select name="bidang_id" class="form-select form-select-sm">
+                    <select name="bidang_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">Semua Bidang</option>
                         @foreach($bidangs as $bidang)
                             <option value="{{ $bidang->id }}" {{ ($selectedBidangId == $bidang->id) ? 'selected' : '' }}>
@@ -42,16 +42,13 @@
                        @endforeach
                     </select>
                 @endif
-                <select name="tahun_dashboard" class="form-select form-select-sm">
+                <select name="tahun_dashboard" class="form-select form-select-sm" onchange="this.form.submit()">
                     @for($t = date('Y')-2; $t <= date('Y')+1; $t++)
                         <option value="{{ $t }}" {{ $t == $tahunDashboard ? 'selected' : '' }}>
                             {{ $t }}
                         </option>
                     @endfor
                 </select>
-                <button class="btn btn-sm btn-primary">
-                    <i class="bi bi-arrow-repeat me-1"></i> Tampilkan
-                </button>
             </form>
         </div>
     </div>
@@ -114,11 +111,11 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 5%">No</th>
-                                        <th>Program</th>
-                                        <th>Indikator</th>
+                                        <th>Judul</th>
+                                        <th>Bidang</th>
                                         <th>Seksi</th>
                                         @if(in_array($user->role, ['superuser','user']))
-                                            <th style="width: 10%">Aksi</th>
+                                        <th style="width: 10%">Aksi</th>
                                         @endif
                                     </tr>
                                 </thead>
@@ -126,9 +123,9 @@
                                     @foreach($list as $index => $induk)
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
-                                            <td>{{ $induk->program }}</td>
-                                            <td>{{ $induk->indikator }}</td>
-                                            <td>{{ optional($induk->seksi)->nama ?? '-' }}</td>
+                                            <td>{{ optional($induk->targetHeader)->judul ?? '-' }}</td>
+                                            <td>{{ optional($induk->bidang)->nama ?? '-' }} </td>
+                                            <td> {{ optional($induk->seksi)->nama ?? '-' }} </td>
                                             @if(in_array($user->role, ['superuser','user']))
                                                 <td>
                                                     <a href="{{ route('realisasi.triwulan.create', ['no' => $noTw, 'induk' => $induk->id]) }}"
