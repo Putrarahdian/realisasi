@@ -126,10 +126,13 @@ Route::middleware('auth')->group(function () {
     ->name('keuangan.index');
 
     // target kepala seksi //
-    Route::middleware(['auth', 'role:kepala_seksi,superuser'])->group(function () {
+    Route::middleware(['auth', 'role:superuser,user'])->group(function () {
         Route::get('/target', [TargetController::class, 'index'])->name('target.index');
         Route::get('/target/create', [TargetController::class, 'create'])->name('target.create');
         Route::post('/target', [TargetController::class, 'store'])->name('target.store');
+
+        Route::post('/target/{id}/approve', [TargetController::class, 'approve'])->name('target.approve');
+        Route::post('/target/{id}/reject',  [TargetController::class, 'reject'])->name('target.reject');
 
         Route::get('/target/{id}/edit', [TargetController::class, 'edit'])->name('target.edit');
         Route::put('/target/{id}', [TargetController::class, 'update'])->name('target.update');

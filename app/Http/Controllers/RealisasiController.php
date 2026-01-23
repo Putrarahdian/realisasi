@@ -625,6 +625,7 @@ class RealisasiController extends Controller
             $seksis  = Seksi::with('bidang')->orderBy('nama')->get();
 
             $targets = Target::whereNotIn('id', $usedTargetIds)
+                ->where('approval_status', 'approved')
                 ->orderBy('tahun','desc')
                 ->orderBy('id','desc')
                 ->get();
@@ -632,6 +633,7 @@ class RealisasiController extends Controller
             $targets = Target::where('bidang_id', $user->bidang_id)
                 ->where('seksi_id', $user->seksi_id)
                 ->whereNotIn('id', $usedTargetIds)
+                ->where('approval_status', 'approved')
                 ->orderBy('tahun','desc')
                 ->orderBy('id','desc')
                 ->get();

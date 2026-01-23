@@ -42,9 +42,16 @@
 
                 {{-- Aksi kanan --}}
                 <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('realisasi-induk.create') }}" class="btn btn-success shadow-sm">
-                        <i class="bi bi-plus-circle me-1"></i> Tambah Data
-                    </a>
+                    @php
+                        $isKasubagKeu = auth()->user()->jabatan &&
+                                        auth()->user()->jabatan->jenis_jabatan === 'kasubag_keuangan';
+                    @endphp
+
+                    @if(!$isKasubagKeu)
+                        <a href="{{ route('realisasi-induk.create') }}" class="btn btn-success shadow-sm">
+                            <i class="bi bi-plus-circle me-1"></i> Tambah Data
+                        </a>
+                    @endif
 
                     @if(request('search') || request('tanggal_dari') || request('tanggal_sampai') || request('bidang_id') || request('seksi_id'))
                         <a href="{{ route('realisasi.index') }}" class="btn btn-secondary shadow-sm">

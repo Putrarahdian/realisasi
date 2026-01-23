@@ -31,7 +31,14 @@
       </a>
     </li>
     
-    @if(auth()->check() && in_array(auth()->user()->role, ['superuser', 'kepala_seksi']))
+    @php
+      $user = auth()->user();
+      $isSuperuser   = $user?->role === 'superuser';
+      $isKepalaSeksi = $user?->jabatan?->jenis_jabatan === 'kepala_seksi';
+      $isKasubagKeu  = $user?->jabatan?->jenis_jabatan === 'kasubag_keuangan';
+    @endphp
+
+    @if(auth()->check() && ($isSuperuser || $isKepalaSeksi || $isKasubagKeu))
       <li class="{{ request()->is('target*') ? 'active' : '' }}">
         <a href="{{ route('target.index') }}">
           <i class="material-icons">flag</i> Target
