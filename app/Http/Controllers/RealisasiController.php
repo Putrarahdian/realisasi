@@ -17,6 +17,8 @@ use App\Models\Bidang;
 use App\Models\Seksi;
 use App\Models\User;
 use App\Models\Target;
+use App\Models\Keuangan;
+use Carbon\Carbon;
 
 class RealisasiController extends Controller
 {
@@ -127,6 +129,33 @@ class RealisasiController extends Controller
                 : 0;
             $row->save();
         }
+    }
+
+    private function uangKeluar(RealisasiInduk $induk, string $kodeTriwulan, float $jumlah): void
+    {
+        $keterangan = "Realisasi Keuangan Triwulan {$kodeTriwulan} (Induk #{$induk->id})";
+
+        // ✅ kalau jadi 0, hapus transaksi keluar yang lama (biar saldo bener)
+        if ($jumlah <= 0) {
+            Keuangan::where('realisasi_induk_id', $induk->id)
+                ->where('jenis', 'keluar')
+                ->where('keterangan', $keterangan)
+                ->delete();
+            return;
+        }
+
+        Keuangan::updateOrCreate(
+            [
+                'realisasi_induk_id' => $induk->id,
+                'jenis'              => 'keluar',
+                'keterangan'         => $keterangan,
+            ],
+            [
+                'tanggal'    => $induk->tanggal ?? now()->toDateString(),
+                'jumlah'     => $jumlah,
+                'created_by' => auth()->id(),
+            ]
+        );
     }
 
     public function index(Request $request)
@@ -422,7 +451,7 @@ class RealisasiController extends Controller
 
             $k = $request->input('keuangan', []);
             $realisasiK = (float) ($k['realisasi'] ?? 0);
-
+            $this->uangKeluar($induk, $kodeTriwulan, $realisasiK);
             $rowKeu->update([
                 'user_id'   => auth()->id(),
                 'realisasi' => $realisasiK,
@@ -616,6 +645,11 @@ class RealisasiController extends Controller
         $user = auth()->user();
 
         $usedTargetIds = RealisasiInduk::whereNotNull('target_id')->pluck('target_id');
+         $lastTanggal = RealisasiInduk::where('user_id', $user->id)
+        ->orderBy('tanggal', 'desc')
+        ->value('tanggal');
+
+        $defaultTanggal = $lastTanggal ? Carbon::parse($lastTanggal)->format('Y-m-d') : now()->format('Y-m-d');
 
         $bidangs = [];
         $seksis  = [];
@@ -639,7 +673,7 @@ class RealisasiController extends Controller
                 ->get();
         }
 
-        return view('realisasi_induk.create', compact('bidangs','seksis','targets'));
+        return view('realisasi_induk.create', compact('bidangs','seksis','targets','defaultTanggal'));
     }
 
     public function create()
@@ -664,7 +698,6 @@ class RealisasiController extends Controller
 
         $rules = [
             'induk.tanggal'   => 'required|date',
-            'induk.tahun'     => 'required|integer',
             'induk.target_id' => 'required|exists:target,id',
             'induk.output'    => 'required|string',
             'induk.outcome'   => 'required|string',
@@ -698,7 +731,8 @@ class RealisasiController extends Controller
         }
         $target = $targetQuery->firstOrFail();
 
-        $tahun = (int) $data['tahun'];
+        $tahun = \Carbon\Carbon::parse($data['tanggal'])->year;
+
         $alreadyUsed = RealisasiInduk::where('target_id', $target->id)->exists();
             if ($alreadyUsed) {
                 return back()
@@ -844,10 +878,37 @@ class RealisasiController extends Controller
         $this->authorizeEditData();
 
         $induk = RealisasiInduk::findOrFail($id);
-
         $this->authorizeBidang($induk);
 
-        return view('realisasi_induk.edit', compact('induk'));
+        $user = auth()->user();
+
+        $usedTargetIds = RealisasiInduk::whereNotNull('target_id')
+            ->where('id', '!=', $induk->id)
+            ->pluck('target_id');
+
+        $bidangs = collect();
+        $seksis  = collect();
+
+        if ($user->role === 'superuser') {
+            $bidangs = Bidang::orderBy('nama')->get();
+            $seksis  = Seksi::with('bidang')->orderBy('nama')->get();
+
+            $targets = Target::whereNotIn('id', $usedTargetIds)
+                ->where('approval_status', 'approved')
+                ->orderBy('tahun', 'desc')
+                ->orderBy('id', 'desc')
+                ->get();
+        } else {
+            $targets = Target::where('bidang_id', $user->bidang_id)
+                ->where('seksi_id', $user->seksi_id)
+                ->whereNotIn('id', $usedTargetIds)
+                ->where('approval_status', 'approved')
+                ->orderBy('tahun', 'desc')
+                ->orderBy('id', 'desc')
+                ->get();
+        }
+
+        return view('realisasi_induk.edit', compact('induk', 'bidangs', 'seksis', 'targets'));
     }
 
     public function update(Request $request, $indukId)
@@ -858,31 +919,37 @@ class RealisasiController extends Controller
         $induk = RealisasiInduk::findOrFail($indukId);
         $this->authorizeBidang($induk);
 
-        // ✅ KASUBAG KEUANGAN: hanya update realisasi keuangan
-        if ($this->isKasubagKeuangan()) {
-            foreach (['I','II','III','IV'] as $tw) {
-                $k = $request->input("keuangan.$tw");
-                if (!is_array($k)) continue;
+    // ✅ KASUBAG KEUANGAN: hanya update realisasi keuangan
+    if ($this->isKasubagKeuangan()) {
+        foreach (['I','II','III','IV'] as $tw) {
+            $k = $request->input("keuangan.$tw");
+            if (!is_array($k)) continue;
 
-                $rowKeu = RealisasiKeuangan::where('induk_id', $indukId)
-                    ->where('triwulan', $tw)
-                    ->first();
+            $rowKeu = RealisasiKeuangan::where('induk_id', $indukId)
+                ->where('triwulan', $tw)
+                ->first();
 
-                // kalau target belum ada, skip
-                if (!$rowKeu || (float)$rowKeu->target <= 0) continue;
+            // kalau target belum ada, skip
+            if (!$rowKeu || (float)$rowKeu->target <= 0) continue;
 
-                $rowKeu->update([
-                    'user_id'   => auth()->id(),
-                    'realisasi' => (float)($k['realisasi'] ?? 0),
-                    'capaian'   => 0,
-                ]);
-            }
+            // ✅ INI yang sebelumnya hilang (biar tidak undefined)
+            $nilaiRealisasi = (float)($k['realisasi'] ?? 0);
 
-            $this->hitungUlangCapaianKeuangan($indukId);
+            $rowKeu->update([
+                'user_id'   => auth()->id(),
+                'realisasi' => $nilaiRealisasi,
+                'capaian'   => 0,
+            ]);
 
-            return redirect()->route('realisasi.show', $indukId)
-                ->with('success', 'Data keuangan berhasil diperbarui.');
+            // ✅ catat uang keluar ke tabel keuangan
+            $this->uangKeluar($induk, $tw, $nilaiRealisasi);
         }
+
+        $this->hitungUlangCapaianKeuangan($indukId);
+
+        return redirect()->route('realisasi.show', $indukId)
+            ->with('success', 'Data keuangan berhasil diperbarui.');
+    }
 
         // ===================== UPDATE OUTPUT/OUTCOME/KEUANGAN =====================
         foreach (['I', 'II', 'III', 'IV'] as $tw) {
@@ -1031,7 +1098,6 @@ class RealisasiController extends Controller
             ->with('success', 'Data berhasil diperbarui.');
     }
 
-
     public function show($id)
     {
         $this->forbidAdminOnKegiatan();
@@ -1051,7 +1117,7 @@ class RealisasiController extends Controller
         $riwayat2Tahun = $this->getRiwayat2Tahun($induk);
 
         return view('realisasi.show', compact('induk', 'riwayat2Tahun'));
-}
+    }   
 
     public function updateInduk(Request $request, $id)
     {
@@ -1062,21 +1128,31 @@ class RealisasiController extends Controller
         $this->authorizeBidang($induk);
 
         $validated = $request->validate([
-            'induk.tanggal'           => 'required|date',
-            'induk.sasaran_strategis' => 'required|string',
-            'induk.program'           => 'required|string',
-            'induk.indikator'         => 'required|string',
-            'induk.target'            => 'required|string',
-            'induk.hambatan'          => 'required|string',
-            'induk.rekomendasi'       => 'required|string',
-            'induk.tindak_lanjut'     => 'required|string',
-            'induk.dokumen'           => 'required|string',
-            'induk.strategi'          => 'required|string',
-            'induk.alasan'            => 'required|string',
+            'induk.tanggal'   => 'required|date',
+            'induk.target_id' => 'required|exists:target,id',
+            'induk.output'    => 'required|string',
+            'induk.outcome'   => 'required|string',
+            'induk.sasaran'   => 'required|string',
         ]);
-        $induk->update($validated['induk']);
 
-        return redirect()->route('realisasi.index')->with('success', 'Data Berhasil Diperbaharui');
+        $data = $validated['induk'];
+
+        // ambil tahun dari tanggal
+        $tanggal = Carbon::parse($data['tanggal']);
+        $tahun   = $tanggal->year;
+
+        $induk->update([
+            'tanggal'   => $data['tanggal'],
+            'tahun'     => $tahun,
+            'target_id' => $data['target_id'],
+            'output'    => $data['output'],
+            'outcome'   => $data['outcome'],
+            'sasaran'   => $data['sasaran'],
+        ]);
+
+        return redirect()
+            ->route('realisasi.index')
+            ->with('success', 'Data Induk berhasil diperbarui');
     }
 
     public function destroyInduk($id)
@@ -1088,7 +1164,7 @@ class RealisasiController extends Controller
 
         $induk->outputs()->delete();
         $induk->outcomes()->delete();
-        $induk->sasaran()->delete();
+        $induk->sasaranDetail()->delete();
         $induk->keuangans()->delete();
         $induk->keberhasilan()->delete();
 

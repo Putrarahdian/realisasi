@@ -81,13 +81,40 @@
           $isSuperuser  = $user?->role === 'superuser';
         @endphp
 
-        @if($isKasubagKeu || $isSuperuser)
-          <li class="nav-item">
-            <a class="nav-link" href="{{ route('keuangan.index') }}">
-              <i class="bi bi-cash-coin me-2"></i> Keuangan
-            </a>
-          </li>
-        @endif
+    {{-- ===================== KEUANGAN ===================== --}}
+    @php
+      // buka dropdown kalau sedang berada di halaman keuangan
+      $isKeuanganMenuOpen = request()->is('keuangan*') || request()->routeIs('keuangan.*');
+    @endphp
+
+    <li class="{{ $isKeuanganMenuOpen ? 'active' : '' }}">
+      <a href="#submenuKeuangan"
+        data-bs-toggle="collapse"
+        role="button"
+        aria-expanded="{{ $isKeuanganMenuOpen ? 'true' : 'false' }}"
+        aria-controls="submenuKeuangan"
+        class="d-flex align-items-center justify-content-between">
+
+        <span><i class="material-icons">payments</i> Keuangan</span>
+        <i class="material-icons">expand_more</i>
+      </a>
+
+      <ul class="collapse list-unstyled ps-3 {{ $isKeuanganMenuOpen ? 'show' : '' }}" id="submenuKeuangan">
+        <li>
+          <a href="{{ route('keuangan.index', ['jenis' => 'masuk']) }}"
+            class="dropdown-item {{ request('jenis') === 'masuk' ? 'active' : '' }}">
+            Uang Masuk
+          </a>
+        </li>
+
+        <li>
+          <a href="{{ route('keuangan.index', ['jenis' => 'keluar']) }}"
+            class="dropdown-item {{ request('jenis') === 'keluar' ? 'active' : '' }}">
+            Uang Keluar
+          </a>
+        </li>
+      </ul>
+    </li>
 
     {{--  Menu khusus Superuser --}}
     @if(in_array(Auth()->user()->role, ['superuser']))

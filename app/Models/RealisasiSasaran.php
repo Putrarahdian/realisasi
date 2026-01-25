@@ -20,4 +20,8 @@ class RealisasiSasaran extends Model
         // return $this->belongsTo(RealisasiInduk::class, 'induk_id');
         return $this->belongsTo(User::class, 'user_id');
     }
+        public function realisasiInduk()
+    {
+        return $this->belongsTo(RealisasiInduk::class, 'realisasi_induk_id');
+    }
 }

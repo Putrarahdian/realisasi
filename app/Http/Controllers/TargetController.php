@@ -199,6 +199,12 @@ class TargetController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
+        if (in_array($target->approval_status, ['approved', 'rejected'])) {
+            return redirect()
+                ->route('target.index')
+                ->with('error', 'Target yang sudah diproses (disetujui/ditolak) tidak bisa diedit.');
+        }
+
         return view('target.edit', compact('target'));
     }
 
@@ -210,6 +216,13 @@ class TargetController extends Controller
             ->with('rincian')
             ->where('id', $id)
             ->firstOrFail();
+        
+        if (in_array($target->approval_status, ['approved', 'rejected'])) {
+            return redirect()
+                ->route('target.index')
+                ->with('error', 'Target yang sudah diproses (disetujui/ditolak) tidak bisa diubah.');
+}
+
 
         $validated = $request->validate([
             'tahun' => ['required','integer'],
@@ -266,6 +279,12 @@ class TargetController extends Controller
         $target = $this->scopeTarget(Target::query(), $user)
             ->where('id', $id)
             ->firstOrFail();
+
+        if (in_array($target->approval_status, ['approved', 'rejected'])) {
+            return redirect()
+                ->route('target.index')
+                ->with('error', 'Target yang sudah diproses (disetujui/ditolak) tidak bisa diubah.');
+                }
 
         $target->delete();
 

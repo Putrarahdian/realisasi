@@ -1,240 +1,318 @@
 @extends('layout.weblab')
 
 @section('content')
-<div class="container-fluid mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
 
-            <div class="card shadow-sm border-0">
-                {{-- Header --}}
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-semibold">Edit Data</h5>
-                    <a href="{{ route('realisasi.index') }}" class="btn btn-outline-light btn-sm fw-semibold">
-                        <i class="bi bi-arrow-left-circle"></i> Kembali
-                    </a>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="mb-1">Edit Data Induk</h4>
+          <small class="text-muted">Pilih target (judul utama) lalu isi Output, Outcome, dan Sasaran.</small>
+        </div>
+        <a href="{{ route('realisasi.index') }}" class="btn btn-secondary btn-sm">&larr; Kembali</a>
+      </div>
+
+      @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          {{ session('success') }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      @endif
+
+      @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          {{ session('error') }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      @endif
+
+      @if($errors->any())
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            @foreach($errors->all() as $e)
+              <li>{{ $e }}</li>
+            @endforeach
+          </ul>
+        </div>
+      @endif
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+
+          <form action="{{ route('realisasi-induk.update', $induk->id) }}" method="POST" id="form-induk">
+            @csrf
+            @method('PUT')
+
+            <h6 class="text-uppercase text-muted mb-3">Informasi Umum</h6>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+                <input type="date"
+                       name="induk[tanggal]"
+                       class="form-control @error('induk.tanggal') is-invalid @enderror"
+                       value="{{ old('induk.tanggal', optional($induk->tanggal)->format('Y-m-d')) }}"
+                       required>
+                @error('induk.tanggal')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+              </div>
+
+              {{-- SUPERUSER: pilih bidang & seksi --}}
+              @if(auth()->user()->role === 'superuser')
+                <div class="col-md-6">
+                  <label class="form-label">Bidang</label>
+                  <select name="induk[bidang_id]" id="bidangSelect"
+                          class="form-select @error('induk.bidang_id') is-invalid @enderror"
+                          required>
+                    <option value="">-- Pilih Bidang --</option>
+                    @foreach($bidangs as $bidang)
+                      <option value="{{ $bidang->id }}"
+                        {{ old('induk.bidang_id', $induk->bidang_id) == $bidang->id ? 'selected' : '' }}>
+                        {{ $bidang->nama }}
+                      </option>
+                    @endforeach
+                  </select>
+                  @error('induk.bidang_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                  @enderror
                 </div>
 
-                {{-- Body --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
-                    <input type="date"
-                        name="tanggal"
-                        class="form-control"
-                        value="{{ old('tanggal', optional($induk->tanggal)->format('Y-m-d')) }}"
-                        required>
+                <div class="col-md-6">
+                  <label class="form-label">Seksi</label>
+                  <select name="induk[seksi_id]" id="seksiSelect"
+                          class="form-select @error('induk.seksi_id') is-invalid @enderror"
+                          required>
+                    <option value="">-- Pilih Seksi --</option>
+                    @foreach($seksis as $seksi)
+                      <option value="{{ $seksi->id }}"
+                              data-bidang="{{ $seksi->bidang_id }}"
+                        {{ old('induk.seksi_id', $induk->seksi_id) == $seksi->id ? 'selected' : '' }}>
+                        {{ $seksi->nama }} ({{ $seksi->bidang->nama ?? '-' }})
+                      </option>
+                    @endforeach
+                  </select>
+                  @error('induk.seksi_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                  @enderror
                 </div>
-
-                <div class="card-body bg-light">
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <strong>Terjadi kesalahan:</strong>
-                            <ul class="mb-0 mt-2">
-                                @foreach ($errors->all() as $err)
-                                    <li>{{ $err }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-
-                    @php
-                        $rawHambatan = old('induk.hambatan', $induk->hambatan);
-
-                        $hambatanText = $rawHambatan;
-                        $keberhasilanText = '';
-
-                        if (Str::contains($rawHambatan, 'Keberhasilan:')) {
-                            [$hPart, $kPart] = explode('Keberhasilan:', $rawHambatan, 2);
-                            $hambatanText = trim(preg_replace('/^Hambatan:\s*/i', '', $hPart));
-                            $keberhasilanText = trim($kPart);
-                        }
-                    @endphp
-
-                    <form id="formEditInduk"
-                          action="{{ route('realisasi-induk.update', $induk->id) }}"
-                          method="POST"
-                          class="row g-3">
-                        @csrf
-                        @method('PUT')
-
-                        {{-- ========== BAGIAN 1: INFORMASI KEGIATAN ========== --}}
-                        <div class="col-12">
-                            <h6 class="text-uppercase text-muted mb-2">Informasi Kegiatan</h6>
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-body row g-3">
-
-                                    {{-- Sasaran Strategis --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Sasaran Strategis</label>
-                                        <input type="text"
-                                               name="induk[sasaran_strategis]"
-                                               class="form-control"
-                                               value="{{ old('induk.sasaran_strategis', $induk->sasaran_strategis) }}"
-                                               required>
-                                    </div>
-
-                                    {{-- Program / Kegiatan / Sub Kegiatan --}}
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Program / Kegiatan / Sub Kegiatan</label>
-                                        <input type="text"
-                                               name="induk[program]"
-                                               class="form-control"
-                                               value="{{ old('induk.program', $induk->program) }}"
-                                               required>
-                                    </div>
-
-                                    {{-- Indikator --}}
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Indikator Prog/Keg/Sub Keg</label>
-                                        <input type="text"
-                                               name="induk[indikator]"
-                                               class="form-control"
-                                               value="{{ old('induk.indikator', $induk->indikator) }}"
-                                               required>
-                                    </div>
-
-                                    {{-- Target --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Target</label>
-                                        <input type="text"
-                                               name="induk[target]"
-                                               class="form-control"
-                                               value="{{ old('induk.target', $induk->target) }}"
-                                               required>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- ========== BAGIAN 2: ANALISIS & TINDAK LANJUT ========== --}}
-                        <div class="col-12">
-                            <h6 class="text-uppercase text-muted mt-3 mb-2">Analisis & Tindak Lanjut</h6>
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-body row g-3">
-
-                                    {{-- Hambatan (input terpisah) --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Hambatan</label>
-                                        <textarea id="hambatanInput"
-                                                  class="form-control"
-                                                  rows="3"
-                                                  required>{{ old('hambatan_only', $hambatanText) }}</textarea>
-                                    </div>
-
-                                    {{-- Keberhasilan (input terpisah) --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Keberhasilan</label>
-                                        <textarea id="keberhasilanInput"
-                                                  class="form-control"
-                                                  rows="3"
-                                                  required>{{ old('keberhasilan_only', $keberhasilanText) }}</textarea>
-                                    </div>
-
-                                    {{-- Field asli yang dikirim ke server (tetap 1 kolom) --}}
-                                    <textarea name="induk[hambatan]"
-                                              id="hambatanHidden"
-                                              class="d-none"
-                                              required>{{ $rawHambatan }}</textarea>
-
-                                    {{-- Rekomendasi --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Rekomendasi</label>
-                                        <textarea name="induk[rekomendasi]"
-                                                  class="form-control"
-                                                  rows="3"
-                                                  required>{{ old('induk.rekomendasi', $induk->rekomendasi) }}</textarea>
-                                    </div>
-
-                                    {{-- TL Rekomendasi Sebelumnya --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">TL Rekomendasi Sebelumnya</label>
-                                        <textarea name="induk[tindak_lanjut]"
-                                                  class="form-control"
-                                                  rows="3"
-                                                  required>{{ old('induk.tindak_lanjut', $induk->tindak_lanjut) }}</textarea>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- ========== BAGIAN 3: DOKUMEN & STRATEGI ========== --}}
-                        <div class="col-12">
-                            <h6 class="text-uppercase text-muted mt-3 mb-2">Dokumen & Strategi</h6>
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-body row g-3">
-
-                                    {{-- Nama Dokumen --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Nama Dokumen / Data Kinerja</label>
-                                        <input type="text"
-                                               name="induk[dokumen]"
-                                               class="form-control"
-                                               value="{{ old('induk.dokumen', $induk->dokumen) }}"
-                                               required>
-                                    </div>
-
-                                    {{-- Strategi TW berikutnya --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Strategi yang Akan Dilakukan Triwulan Berikutnya</label>
-                                        <textarea name="induk[strategi]"
-                                                  class="form-control"
-                                                  rows="3"
-                                                  required>{{ old('induk.strategi', $induk->strategi) }}</textarea>
-                                    </div>
-
-                                    {{-- Alasan tidak tercapai --}}
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Alasan Tidak Tercapai</label>
-                                        <textarea name="induk[alasan]"
-                                                  class="form-control"
-                                                  rows="3"
-                                                  required>{{ old('induk.alasan', $induk->alasan) }}</textarea>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Tombol --}}
-                        <div class="col-12 d-flex justify-content-end mt-3 border-top pt-3">
-                            <button type="submit" class="btn btn-primary me-2">
-                                <i class="bi bi-save"></i> Perbarui
-                            </button>
-                            <a href="{{ route('realisasi.index') }}" class="btn btn-secondary">
-                                Batal
-                            </a>
-                        </div>
-
-                    </form>
-                </div>
+              @endif
             </div>
 
+            <hr class="my-4">
+
+            <h6 class="text-uppercase text-muted mb-3">Judul Utama (dari Target)</h6>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Pilih Target <span class="text-danger">*</span></label>
+              <select id="targetSelect"
+                      name="induk[target_id]"
+                      class="form-select @error('induk.target_id') is-invalid @enderror"
+                      required>
+                <option value="">-- Pilih Target --</option>
+                @foreach($targets as $t)
+                  <option value="{{ $t->id }}"
+                          data-bidang="{{ $t->bidang_id }}"
+                          data-seksi="{{ $t->seksi_id }}"
+                    {{ old('induk.target_id', $induk->target_id) == $t->id ? 'selected' : '' }}>
+                    {{ $t->judul }} ({{ $t->tahun }})
+                  </option>
+                @endforeach
+              </select>
+
+              @error('induk.target_id')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+
+              <small class="text-muted">
+                Judul di PDF akan otomatis memakai judul target yang kamu pilih.
+              </small>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="text-uppercase text-muted mb-3">Sub Judul (diisi manual di Data Induk)</h6>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">1. Output <span class="text-danger">*</span></label>
+              <textarea name="induk[output]"
+                        class="form-control @error('induk.output') is-invalid @enderror"
+                        rows="3" required>{{ old('induk.output', $induk->output) }}</textarea>
+              @error('induk.output')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">2. Outcome <span class="text-danger">*</span></label>
+              <textarea name="induk[outcome]"
+                        class="form-control @error('induk.outcome') is-invalid @enderror"
+                        rows="3" required>{{ old('induk.outcome', $induk->outcome) }}</textarea>
+              @error('induk.outcome')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">3. Sasaran <span class="text-danger">*</span></label>
+              <textarea name="induk[sasaran]"
+                        class="form-control @error('induk.sasaran') is-invalid @enderror"
+                        rows="3" required>{{ old('induk.sasaran', $induk->sasaran) }}</textarea>
+              @error('induk.sasaran')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end gap-2">
+              <a href="{{ route('realisasi.index') }}" class="btn btn-secondary">Batal</a>
+              <button type="submit" class="btn btn-success">Perbarui</button>
+            </div>
+
+          </form>
+
         </div>
+      </div>
+
     </div>
+  </div>
 </div>
 
-{{-- Script gabung hambatan + keberhasilan ke 1 kolom sebelum submit --}}
+{{-- FILTER: khusus superuser --}}
+@if(auth()->user()->role === 'superuser')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const form  = document.getElementById('formEditInduk');
-    const ham   = document.getElementById('hambatanInput');
-    const keb   = document.getElementById('keberhasilanInput');
-    const hidden = document.getElementById('hambatanHidden');
+  const bidangSelect = document.getElementById('bidangSelect');
+  const seksiSelect  = document.getElementById('seksiSelect');
+  const targetSelect = document.getElementById('targetSelect');
 
-    if (!form || !ham || !keb || !hidden) return;
+  if (!bidangSelect || !seksiSelect || !targetSelect) return;
 
-    form.addEventListener('submit', function () {
-        const hVal = ham.value.trim();
-        const kVal = keb.value.trim();
+  const allSeksiOptions  = Array.from(seksiSelect.options);
+  const allTargetOptions = Array.from(targetSelect.options);
 
-        let combined = '';
-        if (hVal || kVal) {
-            combined = 'Hambatan:\n' + hVal + '\n\nKeberhasilan:\n' + kVal;
-        }
+  const oldBidangId  = "{{ old('induk.bidang_id', $induk->bidang_id) }}";
+  const oldSeksiId   = "{{ old('induk.seksi_id', $induk->seksi_id) }}";
+  const oldTargetId  = "{{ old('induk.target_id', $induk->target_id) }}";
 
-        hidden.value = combined;
+  function resetSeksi() { seksiSelect.value = ''; }
+  function resetTarget() { targetSelect.value = ''; }
+
+  function lockSeksi() { seksiSelect.disabled = true; }
+  function unlockSeksi() { seksiSelect.disabled = false; }
+
+  function lockTarget() { targetSelect.disabled = true; }
+  function unlockTarget() { targetSelect.disabled = false; }
+
+  function hideAllTargetsExceptPlaceholder() {
+    allTargetOptions.forEach((opt, idx) => {
+      if (idx === 0) { opt.hidden = false; opt.disabled = false; return; }
+      opt.hidden = true;
+      opt.disabled = true;
     });
+  }
+
+  function filterSeksi(reset = true) {
+    const bidangId = bidangSelect.value;
+
+    if (!bidangId) {
+      lockSeksi();
+      lockTarget();
+      if (reset) { resetSeksi(); resetTarget(); }
+
+      allSeksiOptions.forEach((opt, idx) => {
+        if (idx === 0) { opt.hidden = false; opt.disabled = false; return; }
+        opt.hidden = true;
+        opt.disabled = true;
+      });
+
+      hideAllTargetsExceptPlaceholder();
+      return;
+    }
+
+    unlockSeksi();
+    lockTarget();
+    if (reset) { resetSeksi(); resetTarget(); }
+
+    allSeksiOptions.forEach((opt, idx) => {
+      if (idx === 0) { opt.hidden = false; opt.disabled = false; return; }
+      const cocok = opt.getAttribute('data-bidang') === bidangId;
+      opt.hidden = !cocok;
+      opt.disabled = !cocok;
+    });
+
+    hideAllTargetsExceptPlaceholder();
+  }
+
+  function filterTarget(reset = true) {
+    const bidangId = bidangSelect.value;
+    const seksiId  = seksiSelect.value;
+
+    if (!bidangId || !seksiId) {
+      lockTarget();
+      if (reset) resetTarget();
+      hideAllTargetsExceptPlaceholder();
+      return;
+    }
+
+    unlockTarget();
+    if (reset) resetTarget();
+
+    let ada = false;
+
+    allTargetOptions.forEach((opt, idx) => {
+      if (idx === 0) { opt.hidden = false; opt.disabled = false; return; }
+
+      const cocok = (opt.dataset.bidang === bidangId && opt.dataset.seksi === seksiId);
+      opt.hidden = !cocok;
+      opt.disabled = !cocok;
+
+      if (cocok) ada = true;
+    });
+
+    if (!ada) resetTarget();
+  }
+
+  // ===== INIT =====
+  if (oldBidangId) bidangSelect.value = oldBidangId;
+
+  filterSeksi(false);
+
+  if (oldBidangId && oldSeksiId) {
+    const opt = allSeksiOptions.find(o => o.value === oldSeksiId && o.getAttribute('data-bidang') === oldBidangId);
+    if (opt) {
+      seksiSelect.value = oldSeksiId;
+      filterTarget(false);
+    } else {
+      filterTarget(true);
+    }
+  } else {
+    filterTarget(true);
+  }
+
+  if (oldTargetId) {
+    const opt = allTargetOptions.find(o =>
+      o.value === oldTargetId &&
+      o.dataset.bidang === bidangSelect.value &&
+      o.dataset.seksi === seksiSelect.value
+    );
+    if (opt) {
+      unlockTarget();
+      targetSelect.value = oldTargetId;
+    } else {
+      resetTarget();
+    }
+  }
+
+  // ===== EVENTS =====
+  bidangSelect.addEventListener('change', function () {
+    filterSeksi(true);
+  });
+
+  seksiSelect.addEventListener('change', function () {
+    filterTarget(true);
+  });
 });
 </script>
+@endif
 @endsection

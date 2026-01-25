@@ -17,6 +17,10 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
     <div class="table-responsive">
         <table class="table table-bordered align-middle">
             <thead class="table-light">
@@ -71,51 +75,112 @@
 
                     {{-- AKSI --}}
                     <td>
-                        {{-- KASUBAG KEUANGAN --}}
-                        @if($isKasubagKeu)
+                    @php
+                        $isSuperuser = (auth()->user()->role ?? null) === 'superuser';
+                        $canApprove  = $isKasubagKeu || $isSuperuser; // kasubag keu ATAU superuser bisa approve
+                        $isPending   = $t->approval_status === 'pending';
+                        $isLocked    = in_array($t->approval_status, ['approved','rejected']); // ✅ KUNCI EDIT/HAPUS
+                    @endphp
 
-                            @if($t->approval_status === 'pending')
-                                <form action="{{ route('target.approve', $t->id) }}"
-                                      method="POST"
-                                      style="display:inline">
+                    {{-- ================= SUPERUSER (rapi + lengkap) ================= --}}
+                    @if($isSuperuser)
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+
+                        {{-- Approve / Reject hanya kalau pending --}}
+                        @if($canApprove && $isPending)
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Approve Reject">
+                                <form action="{{ route('target.approve', $t->id) }}" method="POST">
                                     @csrf
-                                    <button class="btn btn-success btn-sm"
+                                    <button type="submit" class="btn btn-success"
                                             onclick="return confirm('Setujui target ini?')">
                                         ✔ Setujui
                                     </button>
                                 </form>
 
-                                <form action="{{ route('target.reject', $t->id) }}"
-                                      method="POST"
-                                      style="display:inline">
+                                <form action="{{ route('target.reject', $t->id) }}" method="POST">
                                     @csrf
-                                    <button class="btn btn-danger btn-sm"
+                                    <button type="submit" class="btn btn-danger"
                                             onclick="return confirm('Tolak target ini?')">
                                         ✖ Tolak
                                     </button>
                                 </form>
+                            </div>
+                        @endif
+
+                        {{-- Edit / Hapus (DISABLE kalau sudah approved/rejected) --}}
+                        <div class="d-inline-flex gap-1">
+                            @if(!$isLocked)
+                                <a href="{{ route('target.edit', $t->id) }}" class="btn btn-warning btn-sm">
+                                    Edit
+                                </a>
+
+                                <form action="{{ route('target.destroy', $t->id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Hapus target ini?')">
+                                        Hapus
+                                    </button>
+                                </form>
                             @else
-                                <span class="text-muted small">—</span>
-                            @endif
-
-                        {{-- SUPERUSER / KEPALA SEKSI --}}
-                        @else
-                            <a href="{{ route('target.edit', $t->id) }}"
-                               class="btn btn-warning btn-sm">
-                                Edit
-                            </a>
-
-                            <form action="{{ route('target.destroy', $t->id) }}"
-                                  method="POST"
-                                  style="display:inline">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Hapus target ini?')">
+                                <button class="btn btn-warning btn-sm" disabled title="Target sudah diproses">
+                                    Edit
+                                </button>
+                                <button class="btn btn-danger btn-sm" disabled title="Target sudah diproses">
                                     Hapus
                                 </button>
-                            </form>
+                            @endif
+                        </div>
+
+                        </div>
+
+                    {{-- ================= KASUBAG KEUANGAN ================= --}}
+                    @elseif($isKasubagKeu)
+                        @if($isPending)
+                            <div class="d-flex flex-wrap gap-2">
+                                <form action="{{ route('target.approve', $t->id) }}" method="POST">
+                                    @csrf
+                                    <button class="btn btn-success btn-sm"
+                                            onclick="return confirm('Setujui target ini?')">✔ Setujui</button>
+                                </form>
+
+                                <form action="{{ route('target.reject', $t->id) }}" method="POST">
+                                    @csrf
+                                    <button class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Tolak target ini?')">✖ Tolak</button>
+                                </form>
+                            </div>
+                        @else
+                            <span class="text-muted small">—</span>
                         @endif
+
+                    {{-- ================= ROLE LAIN (kepala seksi / dll) ================= --}}
+                    @else
+                        <div class="d-flex flex-wrap gap-2">
+                            @if(!$isLocked)
+                                <a href="{{ route('target.edit', $t->id) }}" class="btn btn-warning btn-sm">
+                                    Edit
+                                </a>
+
+                                <form action="{{ route('target.destroy', $t->id) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Hapus target ini?')">
+                                        Hapus
+                                    </button>
+                                </form>
+                            @else
+                                <button class="btn btn-warning btn-sm" disabled title="Target sudah diproses">
+                                    Edit
+                                </button>
+                                <button class="btn btn-danger btn-sm" disabled title="Target sudah diproses">
+                                    Hapus
+                                </button>
+                            @endif
+                        </div>
+                    @endif
                     </td>
                 </tr>
 

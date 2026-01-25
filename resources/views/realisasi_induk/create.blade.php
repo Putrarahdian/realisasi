@@ -44,21 +44,9 @@
                 <input type="date"
                        name="induk[tanggal]"
                        class="form-control @error('induk.tanggal') is-invalid @enderror"
-                       value="{{ old('induk.tanggal') }}"
+                       value="{{ old('induk.tanggal', $defaultTanggal ?? '') }}"
                        required>
                 @error('induk.tanggal')
-                  <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Tahun <span class="text-danger">*</span></label>
-                <input type="number"
-                       name="induk[tahun]"
-                       class="form-control @error('induk.tahun') is-invalid @enderror"
-                       value="{{ old('induk.tahun', date('Y')) }}"
-                       required>
-                @error('induk.tahun')
                   <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
               </div>

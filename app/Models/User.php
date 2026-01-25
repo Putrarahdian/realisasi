@@ -42,6 +42,10 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Seksi::class, 'seksi_id');
     }
+    public function keuangan()
+    {
+        return $this->hasMany(\App\Models\Keuangan::class, 'created_by');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

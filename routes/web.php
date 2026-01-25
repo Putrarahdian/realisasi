@@ -121,10 +121,6 @@ Route::middleware('auth')->group(function () {
         })->name('dashboard.user');
     });
 
-    // kasubag keuangan //
-    Route::get('/keuangan', [KeuanganController::class, 'index'])
-    ->name('keuangan.index');
-
     // target kepala seksi //
     Route::middleware(['auth', 'role:superuser,user'])->group(function () {
         Route::get('/target', [TargetController::class, 'index'])->name('target.index');
@@ -139,5 +135,8 @@ Route::middleware('auth')->group(function () {
 
         Route::delete('/target/{id}', [TargetController::class, 'destroy'])->name('target.destroy');
     });
+
+    Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
+    Route::post('/keuangan/masuk', [KeuanganController::class, 'storeMasuk'])->name('keuangan.masuk.store');
 
 });

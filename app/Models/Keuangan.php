@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class Keuangan extends Model
 {
     use HasFactory;
-     protected $table = 'keuangan';
+    protected $table = 'keuangan';
 
     protected $fillable = [
         'tanggal',
+        'triwulan',
         'jenis',              
         'jumlah',
         'keterangan',
@@ -26,7 +27,6 @@ class Keuangan extends Model
 
     public function realisasiInduk()
     {
-        // pastikan nama tabel realisasi induk kamu adalah realisasi_induks (sesuai screenshot)
         return $this->belongsTo(RealisasiInduk::class, 'realisasi_induk_id');
     }
 
